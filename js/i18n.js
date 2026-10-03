@@ -1,0 +1,89 @@
+import { get } from './state.js';
+
+const dict = {
+  bn: {
+    title: 'পুজো প্ল্যানার',
+    'tab.explore': 'ঘুরে দেখুন', 'tab.plan': 'আমার প্ল্যান', 'tab.guide': 'গাইড',
+    'search.ph': 'প্যান্ডেল বা এলাকা খুঁজুন', 'search.label': 'খুঁজুন',
+    'filter.all': 'সব', 'filter.favs': 'প্রিয়',
+    'area.north': 'উত্তর কলকাতা', 'area.central': 'মধ্য কলকাতা', 'area.south': 'দক্ষিণ কলকাতা', 'area.saltlake': 'সল্টলেক', 'area.howrah': 'হাওড়া',
+    'type.famous': 'নামী', 'type.offbeat': 'অফবিট',
+    'theme.heritage': 'ঐতিহ্য', 'theme.artistic': 'শিল্পকলা', 'theme.traditional': 'পরম্পরা', 'theme.modern': 'আধুনিক',
+    'part.morning': 'সকাল', 'part.afternoon': 'দুপুর', 'part.evening': 'সন্ধ্যা', 'part.night': 'রাত',
+    'btn.gmaps': 'Google Maps', 'btn.directions': 'যাওয়ার পথ', 'btn.metro': 'মেট্রো স্টেশনে যান',
+    'btn.add': 'প্ল্যানে যোগ করুন', 'btn.remove': 'প্ল্যান থেকে সরান', 'btn.fav': 'প্রিয় করুন', 'btn.unfav': 'প্রিয় থেকে সরান',
+    'btn.locate': 'আমার কাছে', 'btn.theme': 'থিম বদলান', 'btn.up': 'উপরে', 'btn.down': 'নিচে',
+    'card.metro': 'কাছের মেট্রো', 'card.walk': '{station}, হেঁটে প্রায় {km} কিমি (~{min} মিনিট)',
+    'card.best': 'ভালো সময়: {part}', 'card.away': 'আপনার থেকে প্রায় {km} কিমি',
+    'list.count': '{n}টি প্যান্ডেল', 'list.empty': 'কিছু পাওয়া যায়নি। ফিল্টার বদলে দেখুন।',
+    'plan.start': 'শুরুর জায়গা', 'plan.me': 'আমার বর্তমান লোকেশন',
+    'plan.empty': 'তালিকা বা মানচিত্র থেকে প্যান্ডেল যোগ করুন।',
+    'plan.auto': 'কাছাকাছি ক্রমে সাজান', 'plan.total': 'মোট প্রায় {km} কিমি (সরলরেখায়)',
+    'plan.full': 'পুরো রুট Google Maps-এ', 'plan.mode': 'যাতায়াতের ধরন',
+    'mode.walking': 'হাঁটা', 'mode.driving': 'গাড়ি', 'mode.bicycling': 'সাইকেল',
+    'plan.legs': 'প্রতিটি ধাপ ট্রানজিটে দেখতে নামের লিংকে চাপুন।',
+    'plan.truncated': 'Google Maps সর্বোচ্চ ৯টি মাঝের স্টপ নেয়, তাই কিছু স্টপ বাদ গেছে।',
+    'plan.fullNote': 'পুরো রুটে ট্রানজিট চলে না; হাঁটা, গাড়ি বা সাইকেল বেছে নিন।',
+    'plan.copy': 'লিংক কপি', 'plan.whatsapp': 'WhatsApp', 'plan.clear': 'প্ল্যান মুছুন', 'plan.shareText': 'আমার পুজো প্ল্যান:',
+    'toast.copied': 'লিংক কপি হয়েছে', 'toast.added': 'প্ল্যানে যোগ হয়েছে', 'toast.removed': 'প্ল্যান থেকে সরানো হয়েছে',
+    'loc.denied': 'লোকেশন পাওয়া যায়নি। ব্রাউজারে অনুমতি দিয়ে আবার চেষ্টা করুন।',
+    'loc.found': 'কাছের মেট্রো: {s}, হেঁটে প্রায় {km} কিমি',
+    'notice.sample': 'ডেমো ডেটা: স্থানাঙ্ক আনুমানিক। ব্যবহারের আগে যাচাই করুন।',
+    'error.data': 'ডেটা লোড হয়নি। ফাইল খুলে নয়, লোকাল সার্ভার বা হোস্টিং থেকে চালান।',
+    'day.mahalaya': 'মহালয়া', 'day.shashthi': 'ষষ্ঠী', 'day.saptami': 'সপ্তমী', 'day.ashtami': 'অষ্টমী', 'day.navami': 'নবমী', 'day.dashami': 'দশমী',
+    'crowd.low': 'কম ভিড়', 'crowd.medium': 'মাঝারি', 'crowd.high': 'বেশি ভিড়', 'crowd.peak': 'চরম ভিড়',
+    'cd.before': '{day}-র আর {n} দিন', 'cd.during': 'আজ {day}', 'cd.crowd': 'এখন সাধারণত: {level}', 'cd.after': 'এ বছরের পুজো শেষ। আসছে বছর আবার।',
+    'guide.title': 'পুজোর দিনপঞ্জি ও ভিড়', 'guide.crowdNote': 'ভিড়ের মাত্রা সাধারণ অভিজ্ঞতার আন্দাজ, লাইভ তথ্য নয়।',
+    'guide.datesNote': 'তারিখ পঞ্জিকা বা পুজো কমিটির ঘোষণার সঙ্গে মিলিয়ে নিন (data/config.json)।',
+    'guide.metroNote': 'পুজোর বিশেষ মেট্রো সময়সূচি Kolkata Metro-র অফিসিয়াল নোটিশে দেখুন।', 'guide.metroLink': 'মেট্রোর অফিসিয়াল সাইট'
+  },
+  en: {
+    title: 'Pujo Planner',
+    'tab.explore': 'Explore', 'tab.plan': 'My plan', 'tab.guide': 'Guide',
+    'search.ph': 'Search pandal or area', 'search.label': 'Search',
+    'filter.all': 'All', 'filter.favs': 'Favourites',
+    'area.north': 'North Kolkata', 'area.central': 'Central Kolkata', 'area.south': 'South Kolkata', 'area.saltlake': 'Salt Lake', 'area.howrah': 'Howrah',
+    'type.famous': 'Famous', 'type.offbeat': 'Offbeat',
+    'theme.heritage': 'Heritage', 'theme.artistic': 'Artistic', 'theme.traditional': 'Traditional', 'theme.modern': 'Modern',
+    'part.morning': 'Morning', 'part.afternoon': 'Afternoon', 'part.evening': 'Evening', 'part.night': 'Night',
+    'btn.gmaps': 'Google Maps', 'btn.directions': 'Directions', 'btn.metro': 'Go to metro',
+    'btn.add': 'Add to plan', 'btn.remove': 'Remove from plan', 'btn.fav': 'Add to favourites', 'btn.unfav': 'Remove from favourites',
+    'btn.locate': 'Near me', 'btn.theme': 'Switch theme', 'btn.up': 'Move up', 'btn.down': 'Move down',
+    'card.metro': 'Nearest metro', 'card.walk': '{station}, about {km} km walk (~{min} min)',
+    'card.best': 'Best time: {part}', 'card.away': 'About {km} km from you',
+    'list.count': '{n} pandals', 'list.empty': 'Nothing found. Try changing the filters.',
+    'plan.start': 'Start from', 'plan.me': 'My current location',
+    'plan.empty': 'Add pandals from the list or the map.',
+    'plan.auto': 'Auto-order by distance', 'plan.total': 'About {km} km in total (straight line)',
+    'plan.full': 'Open full route in Google Maps', 'plan.mode': 'Travel mode',
+    'mode.walking': 'Walk', 'mode.driving': 'Drive', 'mode.bicycling': 'Cycle',
+    'plan.legs': 'Tap a leg to see it as a transit route.',
+    'plan.truncated': 'Google Maps accepts at most 9 middle stops, so some stops were left out.',
+    'plan.fullNote': 'The full route cannot use transit; pick walk, drive or cycle.',
+    'plan.copy': 'Copy link', 'plan.whatsapp': 'WhatsApp', 'plan.clear': 'Clear plan', 'plan.shareText': 'My pujo plan:',
+    'toast.copied': 'Link copied', 'toast.added': 'Added to plan', 'toast.removed': 'Removed from plan',
+    'loc.denied': 'Could not get your location. Allow location access in the browser and try again.',
+    'loc.found': 'Nearest metro: {s}, about {km} km walk',
+    'notice.sample': 'Sample data: coordinates are approximate. Verify them before relying on this.',
+    'error.data': 'Data failed to load. Run from a local server or hosting, not by opening the file directly.',
+    'day.mahalaya': 'Mahalaya', 'day.shashthi': 'Shashthi', 'day.saptami': 'Saptami', 'day.ashtami': 'Ashtami', 'day.navami': 'Navami', 'day.dashami': 'Dashami',
+    'crowd.low': 'Light', 'crowd.medium': 'Moderate', 'crowd.high': 'Heavy', 'crowd.peak': 'Packed',
+    'cd.before': '{n} days to {day}', 'cd.during': 'Today is {day}', 'cd.crowd': 'Usually right now: {level}', 'cd.after': 'This year\'s puja is over. See you next year.',
+    'guide.title': 'Puja calendar and crowds', 'guide.crowdNote': 'Crowd levels are rough rules of thumb, not live data.',
+    'guide.datesNote': 'Check dates against your panchang or puja committee announcements (data/config.json).',
+    'guide.metroNote': 'For special puja metro timings, see the official Kolkata Metro notices.', 'guide.metroLink': 'Official metro site'
+  }
+};
+
+export const lang = () => get().lang;
+
+export function t(key, vars = {}) {
+  const str = dict[lang()]?.[key] ?? dict.en[key] ?? key;
+  return str.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '');
+}
+
+export function applyI18n(root = document) {
+  root.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t(el.dataset.i18n); });
+  root.querySelectorAll('[data-i18n-ph]').forEach((el) => { el.placeholder = t(el.dataset.i18nPh); });
+  root.querySelectorAll('[data-i18n-label]').forEach((el) => { el.setAttribute('aria-label', t(el.dataset.i18nLabel)); });
+}

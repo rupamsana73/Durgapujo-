@@ -1,0 +1,19 @@
+[
+  { "id": 1,  "name": "Baghbazar Sarbojanin", "nameBn": "বাগবাজার সার্বজনীন", "area": "north",   "theme": "heritage",    "type": "famous",  "lat": 22.6012, "lng": 88.3652, "bestTime": "morning" },
+  { "id": 2,  "name": "Kumortuli Sarbojanin", "nameBn": "কুমোরটুলি সার্বজনীন", "area": "north",   "theme": "traditional", "type": "famous",  "lat": 22.5975, "lng": 88.3630, "bestTime": "morning" },
+  { "id": 3,  "name": "Sovabazar Rajbari",    "nameBn": "শোভাবাজার রাজবাড়ি",  "area": "north",   "theme": "heritage",    "type": "famous",  "lat": 22.5948, "lng": 88.3655, "bestTime": "morning" },
+  { "id": 4,  "name": "Hatibagan Sarbojanin", "nameBn": "হাতিবাগান সার্বজনীন", "area": "north",   "theme": "traditional", "type": "offbeat", "lat": 22.5958, "lng": 88.3695, "bestTime": "afternoon" },
+  { "id": 5,  "name": "Tala Prattoy",         "nameBn": "টালা প্রত্যয়",        "area": "north",   "theme": "artistic",    "type": "famous",  "lat": 22.6040, "lng": 88.3780, "bestTime": "evening" },
+  { "id": 6,  "name": "College Square",       "nameBn": "কলেজ স্কোয়ার",        "area": "central", "theme": "traditional", "type": "famous",  "lat": 22.5735, "lng": 88.3640, "bestTime": "morning" },
+  { "id": 7,  "name": "Santosh Mitra Square", "nameBn": "সন্তোষ মিত্র স্কোয়ার", "area": "central", "theme": "artistic",    "type": "famous",  "lat": 22.5700, "lng": 88.3625, "bestTime": "afternoon" },
+  { "id": 8,  "name": "Mohammad Ali Park",    "nameBn": "মহম্মদ আলি পার্ক",    "area": "central", "theme": "artistic",    "type": "famous",  "lat": 22.5655, "lng": 88.3695, "bestTime": "afternoon" },
+  { "id": 9,  "name": "Dum Dum Park",         "nameBn": "দমদম পার্ক",           "area": "north",   "theme": "modern",      "type": "offbeat", "lat": 22.6150, "lng": 88.4130, "bestTime": "evening" },
+  { "id": 10, "name": "Salt Lake FD Block",   "nameBn": "সল্টলেক এফডি ব্লক",   "area": "saltlake","theme": "modern",      "type": "offbeat", "lat": 22.5880, "lng": 88.4040, "bestTime": "evening" },
+  { "id": 11, "name": "Maddox Square",        "nameBn": "ম্যাডক্স স্কোয়ার",    "area": "south",   "theme": "traditional", "type": "famous",  "lat": 22.5350, "lng": 88.3640, "bestTime": "afternoon" },
+  { "id": 12, "name": "Singhi Park",          "nameBn": "সিংহী পার্ক",          "area": "south",   "theme": "artistic",    "type": "famous",  "lat": 22.5330, "lng": 88.3660, "bestTime": "afternoon" },
+  { "id": 13, "name": "Ballygunge Cultural",  "nameBn": "বালিগঞ্জ কালচারাল",   "area": "south",   "theme": "artistic",    "type": "famous",  "lat": 22.5265, "lng": 88.3675, "bestTime": "evening" },
+  { "id": 14, "name": "Ekdalia Evergreen",    "nameBn": "একডালিয়া এভারগ্রিন",  "area": "south",   "theme": "artistic",    "type": "famous",  "lat": 22.5215, "lng": 88.3640, "bestTime": "evening" },
+  { "id": 15, "name": "Mudiali Club",         "nameBn": "মুদিয়ালি ক্লাব",      "area": "south",   "theme": "traditional", "type": "famous",  "lat": 22.5155, "lng": 88.3480, "bestTime": "morning" },
+  { "id": 16, "name": "Jodhpur Park",         "nameBn": "যোধপুর পার্ক",         "area": "south",   "theme": "modern",      "type": "offbeat", "lat": 22.5030, "lng": 88.3660, "bestTime": "evening" },
+  { "id": 17, "name": "Shibpur Sarbojanin",   "nameBn": "শিবপুর সার্বজনীন",     "area": "howrah",  "theme": "traditional", "type": "offbeat", "lat": 22.5630, "lng": 88.3100, "bestTime": "evening" }
+]

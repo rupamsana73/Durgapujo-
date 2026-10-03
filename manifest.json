@@ -1,0 +1,14 @@
+{
+  "name": "Pujo Planner",
+  "short_name": "Pujo Planner",
+  "description": "Plan your pandal hopping with Kolkata Metro and Google Maps.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#FCFBF9",
+  "theme_color": "#B0102A",
+  "lang": "bn",
+  "icons": [
+    { "src": "img/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

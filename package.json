@@ -1,0 +1,11 @@
+{
+  "name": "pujo-planner",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Static Durga Puja pandal-hopping planner with Kolkata Metro and Google Maps links.",
+  "scripts": {
+    "start": "npx serve .",
+    "test": "node tests/logic.test.mjs"
+  }
+}

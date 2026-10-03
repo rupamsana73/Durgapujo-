@@ -1,0 +1,27 @@
+{
+  "sampleData": true,
+  "datesVerified": false,
+  "year": 2026,
+  "days": [
+    { "key": "mahalaya", "date": "2026-10-10" },
+    { "key": "shashthi", "date": "2026-10-16" },
+    { "key": "saptami",  "date": "2026-10-17" },
+    { "key": "ashtami",  "date": "2026-10-18" },
+    { "key": "navami",   "date": "2026-10-19" },
+    { "key": "dashami",  "date": "2026-10-20" }
+  ],
+  "crowd": {
+    "mahalaya": { "morning": "low",    "afternoon": "low",    "evening": "low",    "night": "low" },
+    "shashthi": { "morning": "low",    "afternoon": "low",    "evening": "medium", "night": "medium" },
+    "saptami":  { "morning": "low",    "afternoon": "medium", "evening": "high",   "night": "high" },
+    "ashtami":  { "morning": "medium", "afternoon": "high",   "evening": "peak",   "night": "peak" },
+    "navami":   { "morning": "medium", "afternoon": "high",   "evening": "high",   "night": "peak" },
+    "dashami":  { "morning": "low",    "afternoon": "low",    "evening": "medium", "night": "low" }
+  },
+  "startPoints": [
+    { "id": "howrah",    "name": "Howrah Station",   "nameBn": "হাওড়া স্টেশন",   "lat": 22.5846, "lng": 88.3425 },
+    { "id": "sealdah",   "name": "Sealdah Station",  "nameBn": "শিয়ালদহ স্টেশন", "lat": 22.5695, "lng": 88.3705 },
+    { "id": "esplanade", "name": "Esplanade",        "nameBn": "এসপ্ল্যানেড",      "lat": 22.5646, "lng": 88.3510 }
+  ],
+  "metroInfoUrl": "https://mtp.indianrailways.gov.in"
+}

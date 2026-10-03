@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="bn" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Pujo Planner | পুজো প্ল্যানার</title>
+  <meta name="description" content="Plan your Durga Puja pandal hopping with Kolkata Metro and Google Maps.">
+  <meta name="theme-color" content="#B0102A">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="img/icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600&family=Tiro+Bangla&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <script>
+    // set theme before first paint to avoid a light flash
+    try {
+      var s = JSON.parse(localStorage.getItem('pujo-planner:v1') || '{}');
+      var dark = s.theme ? s.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <header class="top">
+    <div class="top-row">
+      <div>
+        <h1 data-i18n="title">পুজো প্ল্যানার</h1>
+        <p class="countdown" id="countdown" aria-live="polite"></p>
+      </div>
+      <div class="tools">
+        <button class="icon-btn" id="btn-lang" data-action="lang" aria-label="Language">EN</button>
+        <button class="icon-btn" id="btn-theme" data-action="theme" data-i18n-label="btn.theme" aria-label="Switch theme">◐</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="app">
+    <section class="map-wrap" aria-label="Map">
+      <div id="map"></div>
+      <button class="btn fab" data-action="locate" data-i18n="btn.locate">আমার কাছে</button>
+    </section>
+
+    <section class="panel">
+      <nav class="tabs" role="tablist">
+        <button class="tab" role="tab" data-action="tab" data-tab="explore" aria-selected="true"><span data-i18n="tab.explore">ঘুরে দেখুন</span></button>
+        <button class="tab" role="tab" data-action="tab" data-tab="plan" aria-selected="false"><span data-i18n="tab.plan">আমার প্ল্যান</span><span class="badge" id="plan-badge"></span></button>
+        <button class="tab" role="tab" data-action="tab" data-tab="guide" aria-selected="false"><span data-i18n="tab.guide">গাইড</span></button>
+      </nav>
+
+      <div class="tabpane" id="tab-explore">
+        <p class="notice" id="notice" hidden></p>
+        <label class="visually-hidden" for="search" data-i18n="search.label">খুঁজুন</label>
+        <input class="search" id="search" type="search" autocomplete="off" data-i18n-ph="search.ph" placeholder="প্যান্ডেল বা এলাকা খুঁজুন">
+        <div id="chips"></div>
+        <p class="count" id="count" aria-live="polite"></p>
+        <div id="list"></div>
+      </div>
+      <div class="tabpane" id="tab-plan" hidden></div>
+      <div class="tabpane" id="tab-guide" hidden></div>
+    </section>
+  </main>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
