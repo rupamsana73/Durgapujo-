@@ -55,6 +55,7 @@ export function cardHtml(p, { planIndex, fav, distKm, lines }) {
     <p class="tags">
       <span class="tag ${p.type === 'famous' ? 'famous' : ''}">${t('type.' + p.type)}</span>
       <span class="tag">${t('area.' + p.area)}</span>
+      <span class="tag">${esc(p.areaGroup || p.region || '')}</span>
       <span class="tag">${t('theme.' + p.theme)}</span>
     </p>
     ${metroLine(p, lines)}
@@ -62,6 +63,17 @@ export function cardHtml(p, { planIndex, fav, distKm, lines }) {
     ${distKm != null ? `<p class="info muted">${t('card.away', { km: fmtKm(distKm) })}</p>` : ''}
     ${actions(p, inPlan)}
   </article>`;
+}
+
+export function wishlistHtml(pandals, lines) {
+  if (!pandals.length) return `<h2>♥ ${t('nav.saved')}</h2><p class="empty">♡ ${t('wishlist.empty')}</p><p class="hint">${t('wishlist.hint')}</p>`;
+  return `<h2>♥ ${t('nav.saved')}</h2><div class="wishlist-list">${pandals.map((p) => `<article class="card wishlist-card">
+    <div class="card-head"><div><h3>${esc(pName(p))}</h3><p class="tags">${esc(t('area.' + p.area))} · ${esc(p.areaGroup || p.region || '')}</p></div>
+      <button class="icon-btn" data-action="fav" data-id="${p.id}" aria-label="${t('btn.unfav')}">♥</button></div>
+    ${p.metro ? `<p class="info">🚇 ${esc(p.metro.station.name)} · ~${fmtKm(p.metro.estimatedWalkingDistanceKm)} km</p>` : `<p class="info muted">📍 ${t('map.pending')}</p>`}
+    <div class="actions"><button class="btn btn-primary btn-small" data-action="details" data-id="${p.id}">${t('wishlist.view')}</button>
+      <button class="btn btn-ghost btn-small" data-action="fav" data-id="${p.id}">${t('wishlist.remove')}</button></div>
+  </article>`).join('')}</div>`;
 }
 
 export function featuredHtml(p, lines) {
@@ -85,40 +97,69 @@ export function popupHtml(p, { inPlan, lines }) {
   </div>`;
 }
 
-export function detailsHtml(p, lines) {
-  const metro = p.metro;
-  const nearby = (p.nearbyMetro || []).slice(0, 3).map((x) =>
-    `<li><strong>${esc(x.station.name)}</strong><span>${esc(x.station.lines.map((l) => lines[l]?.name || l).join(' / '))} · ~${fmtKm(x.estimatedWalkingDistanceKm)} km · ${esc(x.estimatedWalkingTime)} min</span>
-      <a href="${dirUrl({ origin: x.station, dest: p, mode: 'walking' })}" ${ext}>${t('btn.walkFrom')}</a></li>`).join('');
-  return `<div class="detail-dialog">
-    <button class="icon-btn dialog-close" data-action="close-details" aria-label="${t('btn.close')}">✕</button>
-    <p class="eyebrow">${t('area.' + p.area)}</p>
-    <h2 id="details-title">${esc(pName(p))}</h2>
-    ${p.nameBn ? `<p class="detail-bn">${esc(p.nameBn)}</p>` : ''}
-    <section class="location-status"><strong>📍 ${t('detail.location')}</strong><span>${p.locationVerified ? `✓ ${t('detail.verified')}` : t('detail.unverified')}</span>
-      <a href="${placeUrl(p)}" ${ext}>${t('btn.gmaps')}</a></section>
-    <div class="detail-grid">
-      <p><strong>${t('detail.theme')}</strong><br>${t('theme.' + p.theme)}</p>
-      <p><strong>${t('detail.type')}</strong><br>${t('type.' + p.type)}</p>
-      ${metro ? `<p><strong>${t('detail.metro')}</strong><br>${esc(metro.station.name)}<br><span class="hint">${esc(metro.station.lines.map((l) => lines[l]?.name || l).join(' / '))}</span></p>
-      <p><strong>${t('detail.walk')}</strong><br>~${fmtKm(metro.estimatedWalkingDistanceKm)} km<br>${esc(metro.estimatedWalkingTime)} ${t('detail.minutes')}
-        <br><a href="${dirUrl({ origin: p, dest: metro.station, mode: 'walking' })}" ${ext}>${t('btn.walkTo')}</a></p>` : ''}
-    </div>
-    ${!p.locationVerified ? `<section class="unverified"><strong>🚇 ${t('detail.metroUnavailable')}</strong><p>${t('detail.verifyNote')}</p></section>` : ''}
-    ${nearby ? `<section class="nearby-detail"><h3>${t('detail.nearby')}</h3><ol>${nearby}</ol></section>` : ''}
-    <p class="detail-fallback">${t('detail.imageFallback')}</p>
-    <div class="actions">
-      <a class="btn btn-primary" href="${placeUrl(p)}" ${ext}>${t('btn.gmaps')}</a>
-      <button class="btn btn-ghost" data-action="add" data-id="${p.id}">${t('btn.add')}</button>
-    </div>
-  </div>`;
-}
-
 export function metroPopupHtml(s, lines) {
   const names = s.lines.map((l) => (lang() === 'bn' ? lines[l]?.nameBn : lines[l]?.name) || l).join(', ');
   return `<div class="pop"><strong>${esc(s.name)}</strong>
     <p class="info muted">${esc(names)}</p>
     <div class="actions"><a class="btn btn-primary btn-small" href="${placeUrl(s)}" ${ext}>${t('btn.gmaps')}</a></div></div>`;
+}
+
+export function mapStationPopupHtml(s, lines) {
+  const names = s.lines.map((l) => lines[l]?.name || l).join(', ');
+  return `<div class="pop"><strong>🚇 ${esc(s.name)}</strong><p class="info muted">${esc(names)}</p>
+    <button class="btn btn-primary btn-small" data-action="map-station" data-id="${esc(s.id)}">${t('map.viewPandals')}</button></div>`;
+}
+
+export function mapDiscoveryHtml({ region, station, stations, nearby, lines, favs = new Set() }) {
+  const regionLabel = region ? t('area.' + region) : t('map.selectRegion');
+  const stationHead = station ? `<button class="text-btn" data-action="map-back-region">← ${esc(regionLabel)}</button>
+    <h3>🚇 ${esc(station.name)}</h3>
+    <p class="hint">${esc(station.lines.map((l) => lines[l]?.name || l).join(' / '))}</p>` : `<h3>${esc(regionLabel)}</h3>`;
+  const items = station
+    ? (nearby.length ? nearby.map(({ pandal, distanceKm }) => `<article class="discovery-card">
+        <div class="discovery-link"><strong>📍 ${esc(pName(pandal))}</strong>
+          <span>${distanceKm == null ? t('map.pending') : `~${fmtKm(distanceKm)} km · ${pandal.metro ? esc(pandal.metro.estimatedWalkingTime) : ''}`}</span></div>
+        <div class="actions">
+          <button class="btn btn-primary btn-small" data-action="details" data-id="${pandal.id}">${t('btn.details')}</button>
+          <a class="btn btn-ghost btn-small" href="${placeUrl(pandal)}" ${ext}>${t('btn.directions')}</a>
+          <button class="icon-btn" data-action="fav" data-id="${pandal.id}" aria-label="${t(favs.has(pandal.id) ? 'btn.unfav' : 'btn.fav')}" aria-pressed="${favs.has(pandal.id)}">${favs.has(pandal.id) ? '♥' : '♡'}</button>
+        </div>
+      </article>`).join('') : `<p class="empty">${t('map.noVerifiedPandals')}</p>`)
+    : stations.map((s) => `<button class="discovery-card station-card" data-action="map-station" data-id="${s.id}">
+        <strong>🚇 ${esc(s.name)}</strong><span>${esc(s.lines.map((l) => lines[l]?.name || l).join(' / '))}</span>
+      </button>`).join('');
+  return `<div class="discovery-heading">${stationHead}</div>${items}`;
+}
+
+export function detailViewHtml(p, lines, fav = false) {
+  const metro = p.metro;
+  const nearby = (p.nearbyMetro || []).slice(0, 3).map((x) =>
+    `<li><strong>${esc(x.station.name)}</strong><span>~${fmtKm(x.estimatedWalkingDistanceKm)} km · ${esc(x.estimatedWalkingTime)} ${t('detail.minutes')}</span>
+      <a href="${dirUrl({ origin: x.station, dest: p, mode: 'walking' })}" ${ext}>${t('btn.walkFrom')}</a></li>`).join('');
+  const directions = p.locationVerified ? `<section class="detail-section"><h3>${t('detail.directions')}</h3><div class="actions">
+    <a class="btn btn-ghost" href="${dirUrl({ dest: p, mode: 'walking' })}" ${ext}>🚶 ${t('mode.walking')}</a>
+    <a class="btn btn-ghost" href="${dirUrl({ dest: p, mode: 'driving' })}" ${ext}>🚗 ${t('mode.driving')}</a>
+    <a class="btn btn-ghost" href="${dirUrl({ dest: p, mode: 'transit' })}" ${ext}>🚇 ${t('mode.transit')}</a>
+    <a class="btn btn-ghost" href="${dirUrl({ dest: p, mode: 'walking', navigate: true })}" ${ext}>${t('btn.navigate')}</a>
+  </div></section>` : '';
+  return `<div class="detail-page">
+    <button class="text-btn" data-action="close-details">← ${t('btn.back')}</button>
+    <p class="eyebrow">${esc(t('area.' + p.area))}</p>
+    <h2>${esc(pName(p))}</h2>
+    <p class="detail-region">${esc(p.region || p.area)} · ${esc(p.city || 'Kolkata')}</p>
+    <section class="detail-section"><h3>📍 ${t('detail.location')}</h3>
+      <p>${esc(p.address || (p.locationVerified ? p.googleMapsQuery : t('map.pending')))}</p>
+      <div class="actions"><button class="btn btn-primary" data-action="view-map" data-id="${p.id}">${t('btn.viewMap')}</button>
+      <a class="btn btn-ghost" href="${placeUrl(p)}" ${ext}>${t('btn.gmaps')}</a></div>
+    </section>
+    ${metro ? `<section class="detail-section"><h3>🚇 ${t('detail.metro')}</h3><p><strong>${esc(metro.station.name)}</strong><br>~${fmtKm(metro.estimatedWalkingDistanceKm)} km<br>${esc(metro.estimatedWalkingTime)} ${t('detail.minutes')}</p>
+      <a class="btn btn-ghost" href="${dirUrl({ origin: metro.station, dest: p, mode: 'walking' })}" ${ext}>${t('btn.walkFrom')}</a></section>` : `<section class="unverified"><strong>${t('detail.unverified')}</strong><p>${t('detail.verifyNote')}</p></section>`}
+    ${nearby ? `<section class="detail-section"><h3>${t('detail.nearby')}</h3><ol class="nearby-list">${nearby}</ol></section>` : ''}
+    ${directions}
+    <section class="detail-section"><h3>${t('detail.howToReach')}</h3><p>${metro ? `${esc(metro.station.name)} → ${t('detail.walkEstimate')} → ${esc(pName(p))}` : t('detail.verifyNote')}</p></section>
+    <div class="actions detail-actions"><button class="btn btn-primary" data-action="add" data-id="${p.id}">${t('btn.add')}</button>
+      <button class="btn btn-ghost" data-action="fav" data-id="${p.id}" aria-pressed="${fav}">${fav ? '♥' : '♡'} ${t(fav ? 'btn.unfav' : 'btn.fav')}</button></div>
+  </div>`;
 }
 
 export function planHtml(v) {

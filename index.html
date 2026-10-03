@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600&family=Tiro+Bangla&display=swap">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=20261004-8">
   <script>
     // set theme before first paint to avoid a light flash
     try {
@@ -38,6 +38,8 @@
   </header>
 
   <main class="app">
+    <section id="detail-view" class="detail-view" hidden aria-live="polite"></section>
+    <section id="wishlist-view" class="panel wishlist-view" hidden aria-live="polite"></section>
     <section class="hero" aria-labelledby="hero-title">
       <div class="hero-copy">
         <p class="eyebrow" data-i18n="hero.eyebrow">শুভ শারদীয়া</p>
@@ -52,14 +54,14 @@
         </div>
       </div>
     </section>
-    <section class="featured-section" aria-labelledby="featured-title">
-      <div class="section-heading"><h2 id="featured-title" data-i18n="featured.title">জনপ্রিয় প্যান্ডেল</h2><button class="text-btn" data-action="hero-explore" data-i18n="featured.all">সব দেখুন</button></div>
-      <div id="featured-list" class="featured-list"></div>
-    </section>
     <section class="route-categories" aria-label="Puja routes">
       <button class="route-chip north" data-action="route-group" data-value="north" data-i18n="route.north">🟠 উত্তর কলকাতা</button>
       <button class="route-chip south" data-action="route-group" data-value="south" data-i18n="route.south">🔵 দক্ষিণ কলকাতা</button>
       <button class="route-chip central" data-action="route-group" data-value="central" data-i18n="route.central">🟢 মধ্য কলকাতা</button>
+    </section>
+    <section class="featured-section" aria-labelledby="featured-title">
+      <div class="section-heading"><h2 id="featured-title" data-i18n="featured.title">জনপ্রিয় প্যান্ডেল</h2><button class="text-btn" data-action="hero-explore" data-i18n="featured.all">সব দেখুন</button></div>
+      <div id="featured-list" class="featured-list"></div>
     </section>
     <section class="map-wrap" aria-label="Map">
       <div class="map-heading">
@@ -67,7 +69,21 @@
         <p data-i18n="map.subtitle">কাছের প্যান্ডেল ও মেট্রো স্টেশন</p>
       </div>
       <div id="map"></div>
+      <div class="map-legend" aria-label="Map legend">
+        <span><i class="legend-pandal" aria-hidden="true">🛕</i><span data-i18n="map.legendPandal">প্যান্ডেল</span></span>
+        <span><i class="legend-metro" aria-hidden="true">🚇</i><span data-i18n="map.legendMetro">মেট্রো</span></span>
+        <span><i class="legend-user" aria-hidden="true">●</i><span data-i18n="map.legendUser">আমার লোকেশন</span></span>
+      </div>
       <button class="btn fab" data-action="locate" data-i18n="btn.locate">আমার কাছে</button>
+      <section class="map-discovery" aria-label="Map discovery">
+        <div class="map-regions">
+          <button class="chip" data-action="map-region" data-value="north" data-i18n="route.north">🟠 উত্তর কলকাতা</button>
+          <button class="chip" data-action="map-region" data-value="south" data-i18n="route.south">🔵 দক্ষিণ কলকাতা</button>
+          <button class="chip" data-action="map-region" data-value="central" data-i18n="route.central">🟣 মধ্য কলকাতা</button>
+        </div>
+        <div id="map-breadcrumb" class="map-breadcrumb"></div>
+        <div id="map-discovery-list"></div>
+      </section>
       <div class="map-summary">
         <strong data-i18n="map.nearby">🛕 কাছের প্যান্ডেল</strong>
         <span id="map-summary-count"></span>
@@ -101,10 +117,9 @@
     <button data-action="mobile-saved"><span>♥</span><small data-i18n="nav.saved">Saved</small></button>
     <button data-action="tab" data-tab="plan"><span>📋</span><small data-i18n="nav.plan">My plan</small></button>
   </nav>
-  <dialog id="details-dialog" aria-labelledby="details-title"></dialog>
   <div id="toast" role="status" aria-live="polite"></div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-  <script type="module" src="js/main.js"></script>
+  <script type="module" src="js/main.js?v=20261004-9"></script>
 </body>
 </html>

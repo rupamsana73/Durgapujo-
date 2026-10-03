@@ -40,6 +40,22 @@ export function nearbyStations(point, stations, radiusKm = 1.5) {
     }));
 }
 
+export function getPandalsNearMetro(station, pandals, radiusKm = 2) {
+  return pandals
+    .map((p) => ({ pandal: p, distanceKm: validPoint(p) && p.locationVerified ? haversine(p, station) : null }))
+    .filter(({ distanceKm }) => distanceKm != null && distanceKm <= radiusKm)
+    .sort((a, b) => a.distanceKm - b.distanceKm);
+}
+
+export function getMetroStationsByRegion(region, stations) {
+  if (!region) return stations;
+  return stations.filter((s) => {
+    if (region === 'north') return s.lat >= 22.59;
+    if (region === 'south') return s.lat <= 22.55;
+    return s.lat > 22.55 && s.lat < 22.59;
+  });
+}
+
 /** Computed once at load and cached on each pandal as `p.metro`. */
 export function attachNearestMetro(pandals, stations, radiusKm = 1.5) {
   for (const p of pandals) {
@@ -49,7 +65,11 @@ export function attachNearestMetro(pandals, stations, radiusKm = 1.5) {
       continue;
     }
     p.metro = nearestStation(p, stations);
-    p.nearbyMetro = nearbyStations(p, stations, radiusKm);
+    const withinRadius = nearbyStations(p, stations, radiusKm);
+    const allNearby = nearbyStations(p, stations, Infinity);
+    p.nearbyMetro = [...withinRadius, ...allNearby
+      .filter((candidate) => !withinRadius.some((near) => near.station.id === candidate.station.id))]
+      .slice(0, 3);
   }
 
   return pandals;

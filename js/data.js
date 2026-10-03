@@ -7,6 +7,9 @@ const getJson = async (path) => {
 export const validCoord = (p) =>
   Number.isFinite(p.lat) && Number.isFinite(p.lng) && p.lat >= -90 && p.lat <= 90 && p.lng >= -180 && p.lng <= 180;
 
+export const validatePandalCoordinates = (p) =>
+  validCoord(p) && p.lat >= 22.3 && p.lat <= 22.8 && p.lng >= 88.1 && p.lng <= 88.6;
+
 export const normalizePandalName = (name) =>
   String(name).toLowerCase().replace(/[’'./-]/g, ' ').replace(/\s+/g, ' ').trim();
 
@@ -16,7 +19,7 @@ export function validatePandals(records) {
   return records.filter((p) => {
     const coordsEmpty = p.lat == null && p.lng == null;
     const good = p.id && !ids.has(p.id) && p.name && p.googleMapsQuery && p.googleMapsUrl &&
-      ['north', 'south', 'central'].includes(p.region) && (coordsEmpty || validCoord(p));
+      ['north', 'south', 'central'].includes(p.region) && (coordsEmpty || validatePandalCoordinates(p));
     const nameKey = `${normalizePandalName(p.name)}|${p.areaGroup || p.area}`;
     if (!good || names.has(nameKey)) {
       console.warn('Skipping invalid or duplicate pandal:', p);

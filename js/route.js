@@ -13,10 +13,11 @@ export const placeUrl = (p) => {
 export const walkUrl = (origin, dest) => dirUrl({ origin, dest, mode: 'walking' });
 
 /** Google Maps directions deep link. `origin: null` makes Google use the person's live location. */
-export function dirUrl({ origin = null, dest, mode = 'transit', waypoints = [] }) {
+export function dirUrl({ origin = null, dest, mode = 'transit', waypoints = [], navigate = false }) {
   const q = new URLSearchParams({ api: '1', destination: pt(dest) || dest.googleMapsQuery || dest.name, travelmode: mode });
   if (origin) q.set('origin', pt(origin) || origin.googleMapsQuery || origin.name);
   if (waypoints.length) q.set('waypoints', waypoints.map((p) => pt(p) || p.googleMapsQuery || p.name).join('|'));
+  if (navigate) q.set('dir_action', 'navigate');
   return `${BASE}/dir/?${q}`;
 }
 

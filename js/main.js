@@ -2,7 +2,7 @@
 import * as store from './state.js';
 import { t, applyI18n, lang } from './i18n.js';
 import { loadAll } from './data.js';
-import { attachNearestMetro, nearestStation } from './metro.js';
+import { attachNearestMetro, nearestStation, getMetroStationsByRegion, getPandalsNearMetro } from './metro.js';
 import { haversine, fmtKm } from './geo.js';
 import * as route from './route.js';
 import * as share from './share.js';
@@ -41,6 +41,9 @@ function visible(s) {
     (!q || p.name.toLowerCase().includes(q) || (p.nameBn || '').includes(q) ||
       t('area.' + p.area).toLowerCase().includes(q) ||
       (p.metro?.station?.name || '').toLowerCase().includes(q) ||
+      D.metro.stations.some((station) => station.name.toLowerCase().includes(q) &&
+        ((p.areaGroup || '').toLowerCase().includes(q) || p.region === 'north' && station.lat >= 22.59 ||
+          p.region === 'south' && station.lat <= 22.55 || p.region === 'central' && station.lat > 22.55 && station.lat < 22.59)) ||
       (p.routeGroup || p.area || '').toLowerCase().includes(q) ||
       (p.googleMapsQuery || '').toLowerCase().includes(q)));
   if (s.userLoc) list = [...list].sort((a, b) => {
@@ -57,11 +60,30 @@ function renderSuggestions(query) {
   if (!q) { el.hidden = true; el.innerHTML = ''; return; }
   const matches = D.pandals.filter((p) => p.name.toLowerCase().includes(q) ||
     (p.nameBn || '').includes(q) || (p.metro?.station?.name || '').toLowerCase().includes(q) ||
-    p.area.includes(q) || (p.googleMapsQuery || '').toLowerCase().includes(q)).slice(0, 5);
-  el.innerHTML = matches.map((p) => `<button data-action="suggestion" data-id="${p.id}">
+    (p.areaGroup || '').toLowerCase().includes(q) ||
+    t('area.' + p.area).toLowerCase().includes(q) ||
+    p.area.includes(q) || (p.googleMapsQuery || '').toLowerCase().includes(q) ||
+    D.metro.stations.some((station) => station.name.toLowerCase().includes(q) &&
+      ((p.areaGroup || '').toLowerCase().includes(station.name.toLowerCase()) ||
+        (p.region === 'north' && station.lat >= 22.59) ||
+        (p.region === 'south' && station.lat <= 22.55) ||
+        (p.region === 'central' && station.lat > 22.55 && station.lat < 22.59)))).slice(0, 5);
+  const stations = D.metro.stations.filter((station) => station.name.toLowerCase().includes(q)).slice(0, 3);
+  el.innerHTML = [
+    ...stations.map((station) => `<button data-action="metro-suggestion" data-id="${station.id}">
+      <strong>🚇 ${ui.esc(station.name)}</strong><span>Metro station · ${ui.esc(station.name)}</span>
+    </button>`),
+    ...matches.map((p) => `<button data-action="suggestion" data-id="${p.id}">
     <strong>${ui.esc(ui.pName(p))}</strong><span>${ui.esc(t('area.' + p.area))}${p.metro ? ` · 🚇 ${ui.esc(p.metro.station.name)}` : ''}</span>
-  </button>`).join('');
-  el.hidden = !matches.length;
+  </button>`)
+  ].join('');
+  el.hidden = !(matches.length || stations.length);
+}
+
+function stationRegion(station) {
+  if (station.lat >= 22.59) return 'north';
+  if (station.lat <= 22.55) return 'south';
+  return 'central';
 }
 
 const popupFor = (p) => ui.popupHtml(p, { inPlan: store.get().stops.includes(p.id), lines: D.metro.lines });
@@ -100,6 +122,37 @@ function renderPlan(s) {
   share.syncUrl(s.stops, s.start);
 }
 
+function renderMapDiscovery(s) {
+  const region = s.mapRegion;
+  const stations = region ? getMetroStationsByRegion(region, D.metro.stations) : [];
+  const station = s.mapMetro ? D.metro.stations.find((item) => item.id === s.mapMetro) : null;
+  const verifiedNearby = station
+    ? getPandalsNearMetro(station, D.pandals, D.config.map?.metroPandalRadiusKm || 2)
+      .filter(({ pandal }) => !region || pandal.region === region)
+    : [];
+  const nearby = station && verifiedNearby.length
+    ? verifiedNearby
+    : station
+      ? D.pandals.filter((p) => p.area === region).slice(0, 8).map((p) => ({ pandal: p, distanceKm: null }))
+      : [];
+  $('#map-breadcrumb').textContent = station
+    ? `${t('map.title')} > ${t('area.' + region)} > ${station.name}`
+    : region ? `${t('map.title')} > ${t('area.' + region)}` : t('map.title');
+  $('#map-discovery-list').innerHTML = ui.mapDiscoveryHtml({ region, station, stations, nearby, lines: D.metro.lines, favs: new Set(s.favs) });
+  map.filterMetro(region ? stations : D.metro.stations);
+}
+
+function renderDetailView(s) {
+  const p = s.detailId ? byId(s.detailId) : null;
+  const view = $('#detail-view');
+  if (!view) return;
+  view.hidden = !p;
+  if (p) view.innerHTML = ui.detailViewHtml(p, D.metro.lines, s.favs.includes(p.id));
+  document.querySelectorAll('.app > section:not(#detail-view)').forEach((el) => { el.hidden = Boolean(p); });
+  const wishlist = $('#wishlist-view');
+  if (wishlist) wishlist.hidden = Boolean(p) || !s.wishlist;
+}
+
 function render() {
   const s = store.get();
   // remember keyboard focus so re-rendering does not drop it
@@ -114,12 +167,18 @@ function render() {
   applyTheme(s);
   applyI18n();
   renderHeader();
+  renderDetailView(s);
+  const wishlist = $('#wishlist-view');
+  if (wishlist) {
+    wishlist.innerHTML = ui.wishlistHtml(D.pandals.filter((p) => s.favs.includes(p.id)), D.metro.lines);
+    wishlist.hidden = Boolean(s.detailId) || !s.wishlist;
+  }
 
   document.querySelectorAll('.tab').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === s.tab)));
   ['explore', 'plan', 'guide'].forEach((n) => { $('#tab-' + n).hidden = s.tab !== n; });
 
   const list = visible(s);
-  $('#featured-list').innerHTML = D.pandals.filter((p) => p.featured).map((p) => ui.featuredHtml(p, D.metro.lines)).join('');
+  $('#featured-list').innerHTML = D.pandals.filter((p) => p.featured).slice(0, 5).map((p) => ui.featuredHtml(p, D.metro.lines)).join('');
   $('#chips').innerHTML = ui.chipsHtml(s, areas);
   $('#count').textContent = t('list.count', { n: list.length });
   $('#list').innerHTML = list.length
@@ -130,11 +189,13 @@ function render() {
     : `<p class="empty">${t('list.empty')}</p>`;
 
   renderPlan(s);
+  renderMapDiscovery(s);
   $('#tab-guide').innerHTML = ui.guideHtml({ config: D.config, status: timeline.status(D.config), lang: s.lang });
   $('#map-summary-count').textContent = t('map.count', { n: list.length });
 
   const order = new Map(s.stops.map((id, i) => [id, i + 1]));
-  map.sync(D.pandals, new Set(list.map((p) => p.id)), order, new Set(s.favs), popupFor);
+  const mapPandals = s.mapRegion ? D.pandals.filter((p) => p.area === s.mapRegion) : list;
+  map.sync(D.pandals, new Set(mapPandals.map((p) => p.id)), order, new Set(s.favs), popupFor);
 
   if (focusKey) document.querySelector(focusKey)?.focus();
 }
@@ -170,35 +231,58 @@ const actions = {
   down: (el) => move(el.dataset.id, 1),
   fav: (el) => {
     const id = el.dataset.id; const favs = store.get().favs;
-    store.set({ favs: favs.includes(id) ? favs.filter((x) => String(x) !== id) : [...favs, id] });
+    const removing = favs.includes(id);
+    store.set({ favs: removing ? favs.filter((x) => String(x) !== id) : [...favs, id] });
+    toast(removing ? 'Removed from Wishlist' : 'Added to Wishlist');
   },
   focus: (el) => map.focus(el.dataset.id),
   details: (el) => {
     const p = byId(el.dataset.id);
     if (!p) return;
-    const dialog = $('#details-dialog');
-    dialog.innerHTML = ui.detailsHtml(p, D.metro.lines);
-    if (typeof dialog.showModal === 'function') dialog.showModal();
-    else dialog.setAttribute('open', '');
+    store.set({ detailId: p.id });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   },
   suggestion: (el) => {
     const p = byId(el.dataset.id);
     if (!p) return;
     $('#suggestions').hidden = true;
-    store.set({ q: p.name, tab: 'explore' });
+    store.set({ q: p.name, tab: 'explore', wishlist: false });
     actions.details(el);
   },
+  'metro-suggestion': (el) => {
+    const station = D.metro.stations.find((item) => item.id === el.dataset.id);
+    if (!station) return;
+    $('#suggestions').hidden = true;
+    store.set({ q: '', mapRegion: stationRegion(station), mapMetro: station.id, detailId: null, wishlist: false, tab: 'explore' });
+    document.querySelector('.map-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    map.focusMetro(station);
+  },
   'route-group': (el) => {
-    store.set({ area: el.dataset.value, type: 'all', favOnly: false, tab: 'explore' });
+    store.set({ area: el.dataset.value, mapRegion: el.dataset.value, mapMetro: null, type: 'all', favOnly: false, tab: 'explore' });
     $('#search').focus();
   },
-  'close-details': () => $('#details-dialog').close?.(),
+  'close-details': () => store.set({ detailId: null, wishlist: false }),
+  'view-map': (el) => {
+    const p = byId(el.dataset.id);
+    if (!p) return;
+    store.set({ detailId: null, tab: 'explore' });
+    document.querySelector('.map-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (p.locationVerified) map.focus(el.dataset.id);
+    else toast(t('map.pending'));
+  },
   'hero-explore': () => { store.set({ tab: 'explore' }); $('#search').focus(); },
   'hero-plan': () => { store.set({ tab: 'plan' }); },
-  'mobile-home': () => { store.set({ tab: 'explore' }); window.scrollTo({ top: 0, behavior: 'smooth' }); },
-  'mobile-pandals': () => { store.set({ tab: 'explore' }); $('#list').scrollIntoView({ behavior: 'smooth', block: 'start' }); },
+  'mobile-home': () => { store.set({ tab: 'explore', detailId: null, wishlist: false, favOnly: false, q: '' }); window.scrollTo({ top: 0, behavior: 'smooth' }); },
+  'mobile-pandals': () => { store.set({ tab: 'explore', detailId: null, wishlist: false, favOnly: false }); $('#list').scrollIntoView({ behavior: 'smooth', block: 'start' }); },
   'mobile-map': () => { document.querySelector('.map-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' }); },
-  'mobile-saved': () => { store.set({ tab: 'explore', favOnly: true }); },
+  'map-region': (el) => store.set({ mapRegion: el.dataset.value, mapMetro: null }),
+  'map-station': (el) => {
+    const station = D.metro.stations.find((item) => item.id === el.dataset.id);
+    store.set({ mapMetro: el.dataset.id });
+    if (station) map.focusMetro(station);
+  },
+  'map-back-region': () => store.set({ mapMetro: null }),
+  'mobile-saved': () => { store.set({ tab: 'explore', detailId: null, wishlist: true, favOnly: false }); window.scrollTo({ top: 0, behavior: 'smooth' }); },
   tab: (el) => store.set({ tab: el.dataset.tab }),
   area: (el) => { store.set({ area: el.dataset.value }); map.fit(visible(store.get())); },
   type: (el) => { store.set({ type: el.dataset.value }); map.fit(visible(store.get())); },
@@ -231,9 +315,6 @@ function wireEvents() {
     store.set({ q: e.target.value, tab: 'explore' });
     renderSuggestions(e.target.value);
   });
-  $('#details-dialog').addEventListener('click', (e) => {
-    if (e.target === $('#details-dialog')) $('#details-dialog').close();
-  });
 }
 
 function restoreFromUrl() {
@@ -257,8 +338,16 @@ async function boot() {
   }
   attachNearestMetro(D.pandals, D.metro.stations, D.config.map?.nearbyMetroRadiusKm);
   areas = [...new Set(D.pandals.map((p) => p.area))];
+  const validMapPandals = D.pandals.filter((p) => p.locationVerified && Number.isFinite(p.lat) && Number.isFinite(p.lng));
+  const missingMapPandals = D.pandals.filter((p) => !p.locationVerified || !Number.isFinite(p.lat) || !Number.isFinite(p.lng));
+  console.info('[PANDAL MAP]', {
+    totalPandals: D.pandals.length,
+    validCoordinates: validMapPandals.length,
+    missingCoordinates: missingMapPandals.length,
+    missingNames: missingMapPandals.map((p) => p.name)
+  });
 
-  map.init($('#map'), D.metro.stations, D.metro.lines, (s) => ui.metroPopupHtml(s, D.metro.lines));
+  map.init($('#map'), D.metro.stations, D.metro.lines, (s) => ui.mapStationPopupHtml(s, D.metro.lines));
   restoreFromUrl();
   // drop stale ids if pandals.json changed since the plan was saved
   store.set({ stops: store.get().stops.filter((id) => byId(id)) });
