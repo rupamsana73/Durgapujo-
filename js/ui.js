@@ -26,7 +26,7 @@ function actions(p, inPlan) {
   const metroUrl = p.metro ? dirUrl({ dest: p.metro.station, mode: 'transit' }) : null;
   return `<div class="actions">
     <a class="btn btn-primary btn-small" href="${placeUrl(p)}" ${ext}>${t('btn.gmaps')}</a>
-    <a class="btn btn-ghost btn-small" href="${dirUrl({ dest: p, mode: 'transit' })}" ${ext}>${t('btn.directions')}</a>
+    ${p.locationVerified ? `<a class="btn btn-ghost btn-small" href="${dirUrl({ dest: p, mode: 'transit' })}" ${ext}>${t('btn.directions')}</a>` : ''}
     ${metroUrl ? `<a class="btn btn-ghost btn-small" href="${metroUrl}" ${ext}>${t('btn.metro')}</a>` : ''}
     <button class="btn btn-ghost btn-small" data-action="details" data-id="${p.id}">${t('btn.details')}</button>
     <button class="btn btn-ghost btn-small" data-action="${inPlan ? 'remove' : 'add'}" data-id="${p.id}">${t(inPlan ? 'btn.remove' : 'btn.add')}</button>
@@ -87,23 +87,25 @@ export function popupHtml(p, { inPlan, lines }) {
 
 export function detailsHtml(p, lines) {
   const metro = p.metro;
-  const nearby = (p.nearbyMetro || []).slice(0, 5).map((x) =>
-    `<li><strong>${esc(x.station.name)}</strong> · ~${fmtKm(x.walkKm)} km · ${esc(x.station.lines.map((l) => lines[l]?.name || l).join(' / '))}
+  const nearby = (p.nearbyMetro || []).slice(0, 3).map((x) =>
+    `<li><strong>${esc(x.station.name)}</strong><span>${esc(x.station.lines.map((l) => lines[l]?.name || l).join(' / '))} · ~${fmtKm(x.estimatedWalkingDistanceKm)} km · ${esc(x.estimatedWalkingTime)} min</span>
       <a href="${dirUrl({ origin: x.station, dest: p, mode: 'walking' })}" ${ext}>${t('btn.walkFrom')}</a></li>`).join('');
   return `<div class="detail-dialog">
     <button class="icon-btn dialog-close" data-action="close-details" aria-label="${t('btn.close')}">✕</button>
     <p class="eyebrow">${t('area.' + p.area)}</p>
     <h2 id="details-title">${esc(pName(p))}</h2>
     ${p.nameBn ? `<p class="detail-bn">${esc(p.nameBn)}</p>` : ''}
+    <section class="location-status"><strong>📍 ${t('detail.location')}</strong><span>${p.locationVerified ? `✓ ${t('detail.verified')}` : t('detail.unverified')}</span>
+      <a href="${placeUrl(p)}" ${ext}>${t('btn.gmaps')}</a></section>
     <div class="detail-grid">
       <p><strong>${t('detail.theme')}</strong><br>${t('theme.' + p.theme)}</p>
       <p><strong>${t('detail.type')}</strong><br>${t('type.' + p.type)}</p>
-      ${metro ? `<p><strong>${t('detail.metro')}</strong><br>${esc(metro.station.name)}</p>
-      <p><strong>${t('detail.walk')}</strong><br>~${fmtKm(metro.walkKm)} km (~${metro.walkMin} min)
+      ${metro ? `<p><strong>${t('detail.metro')}</strong><br>${esc(metro.station.name)}<br><span class="hint">${esc(metro.station.lines.map((l) => lines[l]?.name || l).join(' / '))}</span></p>
+      <p><strong>${t('detail.walk')}</strong><br>~${fmtKm(metro.estimatedWalkingDistanceKm)} km<br>${esc(metro.estimatedWalkingTime)} ${t('detail.minutes')}
         <br><a href="${dirUrl({ origin: p, dest: metro.station, mode: 'walking' })}" ${ext}>${t('btn.walkTo')}</a></p>` : ''}
     </div>
-    ${!p.locationVerified ? `<section class="unverified"><strong>📍 ${t('detail.unverified')}</strong><p>${t('detail.verifyNote')}</p></section>` : ''}
-    ${nearby ? `<section class="nearby-detail"><h3>${t('detail.nearby')}</h3><ul>${nearby}</ul></section>` : ''}
+    ${!p.locationVerified ? `<section class="unverified"><strong>🚇 ${t('detail.metroUnavailable')}</strong><p>${t('detail.verifyNote')}</p></section>` : ''}
+    ${nearby ? `<section class="nearby-detail"><h3>${t('detail.nearby')}</h3><ol>${nearby}</ol></section>` : ''}
     <p class="detail-fallback">${t('detail.imageFallback')}</p>
     <div class="actions">
       <a class="btn btn-primary" href="${placeUrl(p)}" ${ext}>${t('btn.gmaps')}</a>

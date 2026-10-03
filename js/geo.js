@@ -17,3 +17,8 @@ export const WALK_MIN_PER_KM = 12; // ~5 km/h
 export const walkKm = (straightKm) => straightKm * WALK_DETOUR;
 export const walkMin = (km) => Math.max(1, Math.round(km * WALK_MIN_PER_KM));
 export const fmtKm = (km) => (km < 10 ? km.toFixed(1) : String(Math.round(km)));
+export const walkRange = (minutes) => {
+  const low = Math.max(1, Math.round(minutes * 0.8));
+  const high = Math.max(low, Math.round(minutes * 1.2));
+  return low === high ? `~${low}` : `~${low}–${high}`;
+};

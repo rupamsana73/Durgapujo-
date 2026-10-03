@@ -1,4 +1,4 @@
-import { haversine, walkKm, walkMin } from './geo.js';
+import { haversine, walkKm, walkMin, walkRange } from './geo.js';
 const validPoint = (p) => Number.isFinite(p.lat) && Number.isFinite(p.lng);
 
 /** Nearest metro station to any {lat,lng} point. */
@@ -12,7 +12,16 @@ export function nearestStation(point, stations) {
 
   if (!best) return null;
   const wk = walkKm(bestKm);
-  return { station: best, straightKm: bestKm, walkKm: wk, walkMin: walkMin(wk) };
+  const minutes = walkMin(wk);
+  return {
+    station: best,
+    straightKm: bestKm,
+    walkKm: wk,
+    walkMin: minutes,
+    estimatedWalkingDistanceKm: wk,
+    estimatedWalkingMinutes: minutes,
+    estimatedWalkingTime: walkRange(minutes)
+  };
 }
 
 export function nearbyStations(point, stations, radiusKm = 1.5) {
@@ -21,7 +30,13 @@ export function nearbyStations(point, stations, radiusKm = 1.5) {
     .filter(({ straightKm }) => straightKm <= radiusKm)
     .sort((a, b) => a.straightKm - b.straightKm)
     .map(({ station, straightKm }) => ({
-      station, straightKm, walkKm: walkKm(straightKm), walkMin: walkMin(walkKm(straightKm))
+      station,
+      straightKm,
+      walkKm: walkKm(straightKm),
+      walkMin: walkMin(walkKm(straightKm)),
+      estimatedWalkingDistanceKm: walkKm(straightKm),
+      estimatedWalkingMinutes: walkMin(walkKm(straightKm)),
+      estimatedWalkingTime: walkRange(walkMin(walkKm(straightKm)))
     }));
 }
 

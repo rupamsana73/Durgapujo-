@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { haversine, walkKm } from '../js/geo.js';
+import { haversine, walkKm, walkRange } from '../js/geo.js';
 import { nearestStation, nearbyStations, attachNearestMetro } from '../js/metro.js';
 import * as route from '../js/route.js';
 import * as timeline from '../js/timeline.js';
@@ -26,11 +26,16 @@ assert.ok(Math.abs(haversine({ lat: 22, lng: 88 }, { lat: 23, lng: 88 }) - 111.1
 assert.equal(haversine(sample[0], sample[0]), 0);
 attachNearestMetro(sample, metro.stations);
 assert.ok(sample[0].metro);
+assert.equal(sample[0].metro.estimatedWalkingDistanceKm, sample[0].metro.walkKm);
+assert.match(sample[0].metro.estimatedWalkingTime, /^~/);
+assert.match(walkRange(10), /^~\d+(–\d+)?$/);
 assert.ok(nearbyStations(sample[0], metro.stations, 1.5).length > 0);
+assert.ok(nearbyStations(sample[0], metro.stations, 1.5).every((a, i, all) => i === 0 || all[i - 1].straightKm <= a.straightKm));
 assert.equal(nearbyStations(sample[0], metro.stations, 0.001).length, 0);
 const unverified = [{ id: 'u', name: 'Unknown', lat: null, lng: null, locationVerified: false }];
 attachNearestMetro(unverified, metro.stations);
 assert.equal(unverified[0].metro, null);
+assert.equal(unverified[0].nearbyMetro.length, 0);
 
 const start = { lat: 22.58, lng: 88.34 };
 const picks = [
