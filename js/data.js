@@ -4,21 +4,36 @@ const getJson = async (path) => {
   return res.json();
 };
 
-const validCoord = (p) =>
-  Number.isFinite(p.lat) && Number.isFinite(p.lng) && p.lat > 21 && p.lat < 24 && p.lng > 87 && p.lng < 90;
+export const validCoord = (p) =>
+  Number.isFinite(p.lat) && Number.isFinite(p.lng) && p.lat >= -90 && p.lat <= 90 && p.lng >= -180 && p.lng <= 180;
 
-/** Load all three data files and drop records with missing/implausible coordinates. */
+export const normalizePandalName = (name) =>
+  String(name).toLowerCase().replace(/[’'./-]/g, ' ').replace(/\s+/g, ' ').trim();
+
+export function validatePandals(records) {
+  const ids = new Set();
+  const names = new Set();
+  return records.filter((p) => {
+    const coordsEmpty = p.lat == null && p.lng == null;
+    const good = p.id && !ids.has(p.id) && p.name && p.googleMapsQuery && p.googleMapsUrl &&
+      ['north', 'south', 'central'].includes(p.region) && (coordsEmpty || validCoord(p));
+    const nameKey = `${normalizePandalName(p.name)}|${p.areaGroup || p.area}`;
+    if (!good || names.has(nameKey)) {
+      console.warn('Skipping invalid or duplicate pandal:', p);
+      return false;
+    }
+    ids.add(p.id); names.add(nameKey); return true;
+  });
+}
+
+/** Load and validate all data; unverified pandals remain searchable but are not mapped. */
 export async function loadAll() {
   const [pandals, metro, config] = await Promise.all([
     getJson('data/pandals.json'),
     getJson('data/metro.json'),
     getJson('data/config.json')
   ]);
-  const ok = pandals.filter((p) => {
-    const good = validCoord(p);
-    if (!good) console.warn('Skipping pandal with bad coordinates:', p);
-    return good;
-  });
+  const ok = validatePandals(pandals);
   metro.stations = metro.stations.filter((s) => {
     const good = validCoord(s);
     if (!good) console.warn('Skipping station with bad coordinates:', s);

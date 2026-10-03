@@ -45,6 +45,7 @@ const pinIcon = (p, n, fav) =>
  */
 export function sync(allPandals, visibleIds, order, favs, popupHtml) {
   for (const p of allPandals) {
+    if (!p.locationVerified || !Number.isFinite(p.lat) || !Number.isFinite(p.lng)) continue;
     let m = markers.get(p.id);
     const n = order.get(p.id) || 0;
     const fav = favs.has(p.id);
@@ -70,8 +71,9 @@ export function focus(id) {
 }
 
 export function fit(pandals) {
-  if (!pandals.length) return;
-  map.fitBounds(L.latLngBounds(pandals.map((p) => [p.lat, p.lng])), { padding: [40, 40], maxZoom: 15 });
+  const located = pandals.filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng));
+  if (!located.length) return;
+  map.fitBounds(L.latLngBounds(located.map((p) => [p.lat, p.lng])), { padding: [40, 40], maxZoom: 15 });
 }
 
 export function drawRoute(points) {

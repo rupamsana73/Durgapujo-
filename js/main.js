@@ -15,7 +15,7 @@ let D; // { pandals, metro, config }
 let areas = [];
 let toastTimer;
 
-const byId = (id) => D.pandals.find((p) => p.id === id);
+const byId = (id) => D.pandals.find((p) => String(p.id) === String(id));
 
 function toast(msg) {
   const el = $('#toast');
@@ -38,9 +38,30 @@ function visible(s) {
     (s.area === 'all' || p.area === s.area) &&
     (s.type === 'all' || p.type === s.type) &&
     (!s.favOnly || s.favs.includes(p.id)) &&
-    (!q || p.name.toLowerCase().includes(q) || (p.nameBn || '').includes(q) || t('area.' + p.area).toLowerCase().includes(q)));
-  if (s.userLoc) list = [...list].sort((a, b) => haversine(s.userLoc, a) - haversine(s.userLoc, b));
+    (!q || p.name.toLowerCase().includes(q) || (p.nameBn || '').includes(q) ||
+      t('area.' + p.area).toLowerCase().includes(q) ||
+      (p.metro?.station?.name || '').toLowerCase().includes(q) ||
+      (p.routeGroup || p.area || '').toLowerCase().includes(q) ||
+      (p.googleMapsQuery || '').toLowerCase().includes(q)));
+  if (s.userLoc) list = [...list].sort((a, b) => {
+    if (!Number.isFinite(a.lat) || !Number.isFinite(a.lng)) return 1;
+    if (!Number.isFinite(b.lat) || !Number.isFinite(b.lng)) return -1;
+    return haversine(s.userLoc, a) - haversine(s.userLoc, b);
+  });
   return list;
+}
+
+function renderSuggestions(query) {
+  const q = query.trim().toLowerCase();
+  const el = $('#suggestions');
+  if (!q) { el.hidden = true; el.innerHTML = ''; return; }
+  const matches = D.pandals.filter((p) => p.name.toLowerCase().includes(q) ||
+    (p.nameBn || '').includes(q) || (p.metro?.station?.name || '').toLowerCase().includes(q) ||
+    p.area.includes(q) || (p.googleMapsQuery || '').toLowerCase().includes(q)).slice(0, 5);
+  el.innerHTML = matches.map((p) => `<button data-action="suggestion" data-id="${p.id}">
+    <strong>${ui.esc(ui.pName(p))}</strong><span>${ui.esc(t('area.' + p.area))}${p.metro ? ` · 🚇 ${ui.esc(p.metro.station.name)}` : ''}</span>
+  </button>`).join('');
+  el.hidden = !matches.length;
 }
 
 const popupFor = (p) => ui.popupHtml(p, { inPlan: store.get().stops.includes(p.id), lines: D.metro.lines });
@@ -75,7 +96,7 @@ function renderPlan(s) {
   };
   $('#tab-plan').innerHTML = ui.planHtml(view);
   $('#plan-badge').textContent = stops.length || '';
-  map.drawRoute(st.point ? [st.point, ...stops] : stops);
+  map.drawRoute((st.point ? [st.point, ...stops] : stops).filter((p) => Number.isFinite(p?.lat) && Number.isFinite(p?.lng)));
   share.syncUrl(s.stops, s.start);
 }
 
@@ -98,17 +119,19 @@ function render() {
   ['explore', 'plan', 'guide'].forEach((n) => { $('#tab-' + n).hidden = s.tab !== n; });
 
   const list = visible(s);
+  $('#featured-list').innerHTML = D.pandals.filter((p) => p.featured).map((p) => ui.featuredHtml(p, D.metro.lines)).join('');
   $('#chips').innerHTML = ui.chipsHtml(s, areas);
   $('#count').textContent = t('list.count', { n: list.length });
   $('#list').innerHTML = list.length
     ? list.map((p) => ui.cardHtml(p, {
         planIndex: s.stops.indexOf(p.id), fav: s.favs.includes(p.id), lines: D.metro.lines,
-        distKm: s.userLoc ? haversine(s.userLoc, p) : null
+        distKm: s.userLoc && Number.isFinite(p.lat) && Number.isFinite(p.lng) ? haversine(s.userLoc, p) : null
       })).join('')
     : `<p class="empty">${t('list.empty')}</p>`;
 
   renderPlan(s);
   $('#tab-guide').innerHTML = ui.guideHtml({ config: D.config, status: timeline.status(D.config), lang: s.lang });
+  $('#map-summary-count').textContent = t('map.count', { n: list.length });
 
   const order = new Map(s.stops.map((id, i) => [id, i + 1]));
   map.sync(D.pandals, new Set(list.map((p) => p.id)), order, new Set(s.favs), popupFor);
@@ -141,15 +164,41 @@ function move(id, delta) {
 }
 
 const actions = {
-  add: (el) => { const id = +el.dataset.id; const s = store.get(); if (!s.stops.includes(id)) { store.set({ stops: [...s.stops, id] }); toast(t('toast.added')); } },
-  remove: (el) => { const id = +el.dataset.id; store.set({ stops: store.get().stops.filter((x) => x !== id) }); toast(t('toast.removed')); },
-  up: (el) => move(+el.dataset.id, -1),
-  down: (el) => move(+el.dataset.id, 1),
+  add: (el) => { const id = el.dataset.id; const s = store.get(); if (!s.stops.includes(id)) { store.set({ stops: [...s.stops, id] }); toast(t('toast.added')); } },
+  remove: (el) => { const id = el.dataset.id; store.set({ stops: store.get().stops.filter((x) => String(x) !== String(id)) }); toast(t('toast.removed')); },
+  up: (el) => move(el.dataset.id, -1),
+  down: (el) => move(el.dataset.id, 1),
   fav: (el) => {
-    const id = +el.dataset.id; const favs = store.get().favs;
-    store.set({ favs: favs.includes(id) ? favs.filter((x) => x !== id) : [...favs, id] });
+    const id = el.dataset.id; const favs = store.get().favs;
+    store.set({ favs: favs.includes(id) ? favs.filter((x) => String(x) !== id) : [...favs, id] });
   },
-  focus: (el) => map.focus(+el.dataset.id),
+  focus: (el) => map.focus(el.dataset.id),
+  details: (el) => {
+    const p = byId(el.dataset.id);
+    if (!p) return;
+    const dialog = $('#details-dialog');
+    dialog.innerHTML = ui.detailsHtml(p, D.metro.lines);
+    if (typeof dialog.showModal === 'function') dialog.showModal();
+    else dialog.setAttribute('open', '');
+  },
+  suggestion: (el) => {
+    const p = byId(el.dataset.id);
+    if (!p) return;
+    $('#suggestions').hidden = true;
+    store.set({ q: p.name, tab: 'explore' });
+    actions.details(el);
+  },
+  'route-group': (el) => {
+    store.set({ area: el.dataset.value, type: 'all', favOnly: false, tab: 'explore' });
+    $('#search').focus();
+  },
+  'close-details': () => $('#details-dialog').close?.(),
+  'hero-explore': () => { store.set({ tab: 'explore' }); $('#search').focus(); },
+  'hero-plan': () => { store.set({ tab: 'plan' }); },
+  'mobile-home': () => { store.set({ tab: 'explore' }); window.scrollTo({ top: 0, behavior: 'smooth' }); },
+  'mobile-pandals': () => { store.set({ tab: 'explore' }); $('#list').scrollIntoView({ behavior: 'smooth', block: 'start' }); },
+  'mobile-map': () => { document.querySelector('.map-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' }); },
+  'mobile-saved': () => { store.set({ tab: 'explore', favOnly: true }); },
   tab: (el) => store.set({ tab: el.dataset.tab }),
   area: (el) => { store.set({ area: el.dataset.value }); map.fit(visible(store.get())); },
   type: (el) => { store.set({ type: el.dataset.value }); map.fit(visible(store.get())); },
@@ -178,6 +227,13 @@ function wireEvents() {
     if (el.dataset.change === 'mode') store.set({ mode: el.value });
   });
   $('#search').addEventListener('input', (e) => store.set({ q: e.target.value }));
+  $('#home-search').addEventListener('input', (e) => {
+    store.set({ q: e.target.value, tab: 'explore' });
+    renderSuggestions(e.target.value);
+  });
+  $('#details-dialog').addEventListener('click', (e) => {
+    if (e.target === $('#details-dialog')) $('#details-dialog').close();
+  });
 }
 
 function restoreFromUrl() {
@@ -199,7 +255,7 @@ async function boot() {
     const n = $('#notice'); n.hidden = false; n.textContent = t('error.data');
     return;
   }
-  attachNearestMetro(D.pandals, D.metro.stations);
+  attachNearestMetro(D.pandals, D.metro.stations, D.config.map?.nearbyMetroRadiusKm);
   areas = [...new Set(D.pandals.map((p) => p.area))];
 
   map.init($('#map'), D.metro.stations, D.metro.lines, (s) => ui.metroPopupHtml(s, D.metro.lines));
@@ -213,7 +269,7 @@ async function boot() {
     render();
   });
   render();
-  map.fit(D.pandals);
+  map.fit(D.pandals.filter((p) => p.locationVerified));
 
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     navigator.serviceWorker.register('sw.js').catch((e) => console.warn('SW registration failed', e));

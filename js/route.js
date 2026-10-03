@@ -1,17 +1,22 @@
 import { haversine } from './geo.js';
 
 const BASE = 'https://www.google.com/maps';
-const pt = (p) => `${p.lat},${p.lng}`;
+const pt = (p) => Number.isFinite(p?.lat) && Number.isFinite(p?.lng) ? `${p.lat},${p.lng}` : null;
 
 export const MAX_WAYPOINTS = 9; // Google Maps URL limit for waypoints
 
-export const placeUrl = (p) => `${BASE}/search/?api=1&query=${pt(p)}`;
+export const placeUrl = (p) => {
+  const query = p.googleMapsQuery || (pt(p) || p.name || '');
+  return `${BASE}/search/?api=1&query=${encodeURIComponent(query)}`;
+};
+
+export const walkUrl = (origin, dest) => dirUrl({ origin, dest, mode: 'walking' });
 
 /** Google Maps directions deep link. `origin: null` makes Google use the person's live location. */
 export function dirUrl({ origin = null, dest, mode = 'transit', waypoints = [] }) {
-  const q = new URLSearchParams({ api: '1', destination: pt(dest), travelmode: mode });
-  if (origin) q.set('origin', pt(origin));
-  if (waypoints.length) q.set('waypoints', waypoints.map(pt).join('|'));
+  const q = new URLSearchParams({ api: '1', destination: pt(dest) || dest.googleMapsQuery || dest.name, travelmode: mode });
+  if (origin) q.set('origin', pt(origin) || origin.googleMapsQuery || origin.name);
+  if (waypoints.length) q.set('waypoints', waypoints.map((p) => pt(p) || p.googleMapsQuery || p.name).join('|'));
   return `${BASE}/dir/?${q}`;
 }
 
@@ -24,7 +29,10 @@ export function orderStops(start, stops) {
   while (rest.length) {
     let bi = 0;
     let bd = Infinity;
-    rest.forEach((s, i) => { const d = haversine(cur, s); if (d < bd) { bd = d; bi = i; } });
+    rest.forEach((s, i) => {
+      const d = cur && pt(cur) && pt(s) ? haversine(cur, s) : Infinity;
+      if (d < bd) { bd = d; bi = i; }
+    });
     cur = rest.splice(bi, 1)[0];
     out.push(cur);
   }
@@ -51,7 +59,7 @@ export function fullRoute(origin, stops, mode = 'walking') {
 
 /** Straight-line total in km along start -> stops. */
 export function totalKm(startPoint, stops) {
-  const path = startPoint ? [startPoint, ...stops] : stops;
+  const path = (startPoint ? [startPoint, ...stops] : stops).filter((p) => pt(p));
   let sum = 0;
   for (let i = 1; i < path.length; i++) sum += haversine(path[i - 1], path[i]);
   return sum;

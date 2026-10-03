@@ -2,6 +2,7 @@
   "sampleData": true,
   "datesVerified": false,
   "year": 2026,
+  "map": { "nearbyMetroRadiusKm": 1.5 },
   "days": [
     { "key": "mahalaya", "date": "2026-10-10" },
     { "key": "shashthi", "date": "2026-10-16" },

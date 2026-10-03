@@ -27,6 +27,7 @@
     <div class="top-row">
       <div>
         <h1 data-i18n="title">পুজো প্ল্যানার</h1>
+        <p class="brand-subtitle" data-i18n="subtitle">কলকাতা • দুর্গাপূজা ২০২৬</p>
         <p class="countdown" id="countdown" aria-live="polite"></p>
       </div>
       <div class="tools">
@@ -37,9 +38,40 @@
   </header>
 
   <main class="app">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow" data-i18n="hero.eyebrow">শুভ শারদীয়া</p>
+        <h2 id="hero-title" data-i18n="hero.title">কলকাতার দুর্গাপূজায় উৎসবের পথ খুঁজুন</h2>
+        <p data-i18n="hero.body">প্যান্ডেল খুঁজুন, কাছের মেট্রো দেখুন, আর Google Maps-এ পথ দেখুন।</p>
+        <label class="visually-hidden" for="home-search" data-i18n="search.label">খুঁজুন</label>
+        <input class="home-search" id="home-search" type="search" autocomplete="off" data-i18n-ph="home.search" placeholder="প্যান্ডেল, এলাকা বা মেট্রো খুঁজুন">
+        <div id="suggestions" class="suggestions" hidden></div>
+        <div class="hero-actions">
+          <button class="btn btn-primary" data-action="hero-explore" data-i18n="hero.explore">Explore pandals</button>
+          <button class="btn btn-ghost" data-action="hero-plan" data-i18n="hero.plan">Plan your Puja</button>
+        </div>
+      </div>
+    </section>
+    <section class="featured-section" aria-labelledby="featured-title">
+      <div class="section-heading"><h2 id="featured-title" data-i18n="featured.title">জনপ্রিয় প্যান্ডেল</h2><button class="text-btn" data-action="hero-explore" data-i18n="featured.all">সব দেখুন</button></div>
+      <div id="featured-list" class="featured-list"></div>
+    </section>
+    <section class="route-categories" aria-label="Puja routes">
+      <button class="route-chip north" data-action="route-group" data-value="north" data-i18n="route.north">🟠 উত্তর কলকাতা</button>
+      <button class="route-chip south" data-action="route-group" data-value="south" data-i18n="route.south">🔵 দক্ষিণ কলকাতা</button>
+      <button class="route-chip central" data-action="route-group" data-value="central" data-i18n="route.central">🟢 মধ্য কলকাতা</button>
+    </section>
     <section class="map-wrap" aria-label="Map">
+      <div class="map-heading">
+        <h2 data-i18n="map.title">🗺️ প্যান্ডেল ম্যাপ</h2>
+        <p data-i18n="map.subtitle">কাছের প্যান্ডেল ও মেট্রো স্টেশন</p>
+      </div>
       <div id="map"></div>
       <button class="btn fab" data-action="locate" data-i18n="btn.locate">আমার কাছে</button>
+      <div class="map-summary">
+        <strong data-i18n="map.nearby">🛕 কাছের প্যান্ডেল</strong>
+        <span id="map-summary-count"></span>
+      </div>
     </section>
 
     <section class="panel">
@@ -62,6 +94,14 @@
     </section>
   </main>
 
+  <nav class="mobile-nav" aria-label="Mobile navigation">
+    <button data-action="mobile-home"><span>⌂</span><small data-i18n="nav.home">Home</small></button>
+    <button data-action="mobile-pandals"><span>🛕</span><small data-i18n="nav.pandals">Pandals</small></button>
+    <button data-action="mobile-map"><span>🗺️</span><small data-i18n="nav.map">Map</small></button>
+    <button data-action="mobile-saved"><span>♥</span><small data-i18n="nav.saved">Saved</small></button>
+    <button data-action="tab" data-tab="plan"><span>📋</span><small data-i18n="nav.plan">My plan</small></button>
+  </nav>
+  <dialog id="details-dialog" aria-labelledby="details-title"></dialog>
   <div id="toast" role="status" aria-live="polite"></div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>

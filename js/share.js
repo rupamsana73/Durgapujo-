@@ -1,7 +1,7 @@
 // The plan lives in the URL, so a plain link is the whole "backend".
 export function parseUrl(search = location.search) {
   const q = new URLSearchParams(search);
-  const stops = (q.get('stops') || '').split(',').map((x) => parseInt(x, 10)).filter(Number.isInteger);
+  const stops = (q.get('stops') || '').split(',').map((x) => x.trim()).filter(Boolean);
   return { stops, start: q.get('start') || null };
 }
 

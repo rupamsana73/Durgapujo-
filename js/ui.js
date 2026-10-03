@@ -13,10 +13,13 @@ const spName = (sp) => (lang() === 'bn' && sp.nameBn ? sp.nameBn : sp.name);
 const ext = 'target="_blank" rel="noopener noreferrer"';
 
 function metroLine(p, lines) {
-  if (!p.metro) return '';
+  if (!p.metro) return `<p class="info muted">📍 ${t('detail.unverifiedShort')}</p>`;
   const m = p.metro;
-  return `<p class="info"><span class="mdot" style="background:${lineColor(lines, m.station)}"></span>
-    <span>${esc(t('card.walk', { station: m.station.name, km: '~' + fmtKm(m.walkKm), min: m.walkMin }))}</span></p>`;
+  const nearby = (p.nearbyMetro || []).slice(0, 3).map((x) =>
+    `<li>${esc(x.station.name)} · ~${fmtKm(x.walkKm)} km</li>`).join('');
+  return `<div class="metro-info"><p class="info"><span class="mdot" style="background:${lineColor(lines, m.station)}"></span>
+    <span>${esc(t('card.walk', { station: m.station.name, km: '~' + fmtKm(m.walkKm), min: m.walkMin }))}</span></p>
+    ${nearby ? `<details><summary>${t('card.nearby')}</summary><ul>${nearby}</ul></details>` : ''}</div>`;
 }
 
 function actions(p, inPlan) {
@@ -25,6 +28,7 @@ function actions(p, inPlan) {
     <a class="btn btn-primary btn-small" href="${placeUrl(p)}" ${ext}>${t('btn.gmaps')}</a>
     <a class="btn btn-ghost btn-small" href="${dirUrl({ dest: p, mode: 'transit' })}" ${ext}>${t('btn.directions')}</a>
     ${metroUrl ? `<a class="btn btn-ghost btn-small" href="${metroUrl}" ${ext}>${t('btn.metro')}</a>` : ''}
+    <button class="btn btn-ghost btn-small" data-action="details" data-id="${p.id}">${t('btn.details')}</button>
     <button class="btn btn-ghost btn-small" data-action="${inPlan ? 'remove' : 'add'}" data-id="${p.id}">${t(inPlan ? 'btn.remove' : 'btn.add')}</button>
   </div>`;
 }
@@ -60,12 +64,51 @@ export function cardHtml(p, { planIndex, fav, distKm, lines }) {
   </article>`;
 }
 
+export function featuredHtml(p, lines) {
+  const metro = p.metro?.station?.name || '';
+  return `<article class="featured-card">
+    <h3>${esc(pName(p))}</h3>
+    <p>${esc(t('area.' + p.area))}${metro ? ` · 🚇 ${esc(metro)}` : ''}</p>
+    <div class="featured-actions">
+      <button class="btn btn-primary btn-small" data-action="details" data-id="${p.id}">${t('btn.details')}</button>
+      <a class="btn btn-ghost btn-small" href="${placeUrl(p)}" ${ext}>${t('btn.directions')}</a>
+    </div>
+  </article>`;
+}
+
 export function popupHtml(p, { inPlan, lines }) {
   return `<div class="pop">
     <strong>${esc(pName(p))}</strong>
     <p class="info muted">${t('area.' + p.area)}, ${t('theme.' + p.theme)}</p>
     ${metroLine(p, lines)}
     ${actions(p, inPlan)}
+  </div>`;
+}
+
+export function detailsHtml(p, lines) {
+  const metro = p.metro;
+  const nearby = (p.nearbyMetro || []).slice(0, 5).map((x) =>
+    `<li><strong>${esc(x.station.name)}</strong> · ~${fmtKm(x.walkKm)} km · ${esc(x.station.lines.map((l) => lines[l]?.name || l).join(' / '))}
+      <a href="${dirUrl({ origin: x.station, dest: p, mode: 'walking' })}" ${ext}>${t('btn.walkFrom')}</a></li>`).join('');
+  return `<div class="detail-dialog">
+    <button class="icon-btn dialog-close" data-action="close-details" aria-label="${t('btn.close')}">✕</button>
+    <p class="eyebrow">${t('area.' + p.area)}</p>
+    <h2 id="details-title">${esc(pName(p))}</h2>
+    ${p.nameBn ? `<p class="detail-bn">${esc(p.nameBn)}</p>` : ''}
+    <div class="detail-grid">
+      <p><strong>${t('detail.theme')}</strong><br>${t('theme.' + p.theme)}</p>
+      <p><strong>${t('detail.type')}</strong><br>${t('type.' + p.type)}</p>
+      ${metro ? `<p><strong>${t('detail.metro')}</strong><br>${esc(metro.station.name)}</p>
+      <p><strong>${t('detail.walk')}</strong><br>~${fmtKm(metro.walkKm)} km (~${metro.walkMin} min)
+        <br><a href="${dirUrl({ origin: p, dest: metro.station, mode: 'walking' })}" ${ext}>${t('btn.walkTo')}</a></p>` : ''}
+    </div>
+    ${!p.locationVerified ? `<section class="unverified"><strong>📍 ${t('detail.unverified')}</strong><p>${t('detail.verifyNote')}</p></section>` : ''}
+    ${nearby ? `<section class="nearby-detail"><h3>${t('detail.nearby')}</h3><ul>${nearby}</ul></section>` : ''}
+    <p class="detail-fallback">${t('detail.imageFallback')}</p>
+    <div class="actions">
+      <a class="btn btn-primary" href="${placeUrl(p)}" ${ext}>${t('btn.gmaps')}</a>
+      <button class="btn btn-ghost" data-action="add" data-id="${p.id}">${t('btn.add')}</button>
+    </div>
   </div>`;
 }
 
@@ -137,5 +180,9 @@ export function guideHtml({ config, status, lang: lg }) {
   return `<h2 class="pad" style="font-size:1.25rem;margin-bottom:10px">${t('guide.title')}</h2>${days}
     <p class="pad hint">${t('guide.crowdNote')}</p>
     <p class="pad hint">${t('guide.datesNote')}</p>
-    <p class="pad hint">${t('guide.metroNote')} <a href="${esc(config.metroInfoUrl)}" ${ext}>${t('guide.metroLink')}</a></p>`;
+    <p class="pad hint">${t('guide.metroNote')} <a href="${esc(config.metroInfoUrl)}" ${ext}>${t('guide.metroLink')}</a></p>
+    <section class="culture pad"><h2>${t('culture.title')}</h2><div class="culture-grid">
+      ${['dhak','shankha','dhunuchi','anjali','bhog','art'].map((x) => `<span><b>${t('culture.' + x + '.icon')}</b>${t('culture.' + x)}</span>`).join('')}
+    </div></section>
+    <section class="gallery pad"><h2>${t('gallery.title')}</h2><p class="hint">${t('gallery.fallback')}</p></section>`;
 }
