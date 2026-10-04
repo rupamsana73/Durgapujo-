@@ -1,7 +1,7 @@
 import { haversine } from './geo.js';
 
 const BASE = 'https://www.google.com/maps';
-const pt = (p) => Number.isFinite(p?.lat) && Number.isFinite(p?.lng) ? `${p.lat},${p.lng}` : null;
+const pt = (p) => p && p.locationVerified !== false && Number.isFinite(p.lat) && Number.isFinite(p.lng) ? `${p.lat},${p.lng}` : null;
 
 export const MAX_WAYPOINTS = 9; // Google Maps URL limit for waypoints
 

@@ -29,6 +29,72 @@ export function validatePandals(records) {
   });
 }
 
+export function normalizeId(str) {
+  return String(str || '')
+    .toLowerCase()
+    .trim()
+    .replace(/^north-|^south-|^central-/, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+export function findPandal(pandals, identifier) {
+  if (!identifier || !pandals?.length) return null;
+  const raw = String(identifier).trim().toLowerCase();
+  // 1. Exact id or slug match
+  let match = pandals.find((p) => (p.id && p.id.toLowerCase() === raw) || (p.slug && p.slug.toLowerCase() === raw));
+  if (match) return match;
+
+  // 2. Normalized id or slug match
+  const norm = normalizeId(raw);
+  match = pandals.find((p) => normalizeId(p.id) === norm || normalizeId(p.slug) === norm);
+  if (match) return match;
+
+  // 3. Normalized name match
+  match = pandals.find((p) => normalizeId(p.name) === norm);
+  if (match) return match;
+
+  // 4. Substring / slug containment
+  match = pandals.find((p) => {
+    const pNorm = normalizeId(p.id);
+    const sNorm = normalizeId(p.slug || '');
+    return (norm.length >= 4 && (pNorm.includes(norm) || sNorm.includes(norm) || norm.includes(pNorm)));
+  });
+  if (match) return match;
+
+  // 5. Bengali name match if provided
+  match = pandals.find((p) => p.nameBn && p.nameBn.trim().toLowerCase() === raw);
+  return match || null;
+}
+
+export function findStation(stations, identifier) {
+  if (!identifier || !stations?.length) return null;
+  const raw = String(identifier).trim().toLowerCase();
+  // 1. Exact id or name match
+  let match = stations.find((s) => (s.id && s.id.toLowerCase() === raw) || (s.name && s.name.toLowerCase() === raw));
+  if (match) return match;
+
+  // 2. Normalized id or name
+  const norm = normalizeId(raw);
+  match = stations.find((s) => normalizeId(s.id) === norm || normalizeId(s.name) === norm);
+  if (match) return match;
+
+  // 3. Containment
+  match = stations.find((s) => {
+    const sNorm = normalizeId(s.name);
+    return (norm.length >= 3 && (sNorm.includes(norm) || norm.includes(sNorm) || normalizeId(s.id).includes(norm)));
+  });
+  return match || null;
+}
+
+export function getHomeFeatured(pandals) {
+  if (!pandals?.length) return [];
+  const north = pandals.filter((p) => p.featured && p.region === 'north').slice(0, 2);
+  const south = pandals.filter((p) => p.featured && p.region === 'south').slice(0, 2);
+  const central = pandals.filter((p) => p.featured && p.region === 'central').slice(0, 1);
+  return [...north, ...south, ...central];
+}
+
 /** Load and validate all data; unverified pandals remain searchable but are not mapped. */
 export async function loadAll() {
   const root = typeof document !== 'undefined' && document.body?.dataset.page === 'home' ? '' : '../';
@@ -45,3 +111,4 @@ export async function loadAll() {
   });
   return { pandals: ok, metro, config };
 }
+

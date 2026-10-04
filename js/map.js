@@ -30,6 +30,19 @@ export function init(el, metro, lineColors, metroPopup) {
     metroMarkers.set(s.id, marker);
   }
   L.control.layers(null, { Pandals: pandalLayer, Metro: metroLayer }, { collapsed: true }).addTo(map);
+
+  const legend = L.control({ position: 'topright' });
+  legend.onAdd = function() {
+    const div = L.DomUtil.create('div', 'map-legend');
+    div.innerHTML = `
+      <span><i class="legend-pandal">🛕</i> Pandal</span>
+      <span><i class="legend-metro">🚇</i> Metro</span>
+      <span><i class="legend-user">📍</i> You</span>
+    `;
+    return div;
+  };
+  legend.addTo(map);
+
   window.addEventListener('resize', () => map.invalidateSize());
 }
 
@@ -108,9 +121,16 @@ export function setUser(loc, recenter = false) {
   const ll = [loc.lat, loc.lng];
   if (!userMarker) {
     userMarker = L.marker(ll, {
-      icon: L.divIcon({ className: 'pin-wrap', iconSize: [16, 16], iconAnchor: [8, 8], html: '<span class="me-dot"></span>' }),
-      interactive: false, zIndexOffset: 1000
-    }).addTo(map);
+      icon: L.divIcon({
+        className: 'pin-wrap',
+        iconSize: [26, 26],
+        iconAnchor: [13, 13],
+        html: '<span class="user-location-marker" aria-label="You"><span class="user-pulse"></span><span class="user-dot">📍</span></span>'
+      }),
+      interactive: true,
+      title: 'You are here',
+      zIndexOffset: 1000
+    }).bindPopup('<strong>📍 You are here</strong>').addTo(map);
   } else {
     userMarker.setLatLng(ll);
   }

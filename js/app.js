@@ -1,7 +1,7 @@
 import * as store from './state.js';
 import { t, applyI18n, lang } from './i18n.js';
-import { loadAll } from './data.js';
-import { attachNearestMetro, getMetroStationsByRegion, getPandalsNearMetro, nearestStation } from './metro.js';
+import { loadAll, findPandal, findStation, getHomeFeatured } from './data.js';
+import { attachNearestMetro, getMetroStationsByRegion, getPandalsNearMetro, nearestStation, lineColor } from './metro.js';
 import { haversine, fmtKm } from './geo.js';
 import * as route from './route.js';
 import * as share from './share.js';
@@ -20,12 +20,10 @@ const pageUrl = (name, params = {}) => {
 let data;
 let areas = [];
 let toastTimer;
-const sameIdentifier = (value, identifier) =>
-  value != null && identifier != null && String(value).toLowerCase() === String(identifier).toLowerCase();
-const byId = (id) => data.pandals.find((p) => sameIdentifier(p.id, id) || sameIdentifier(p.slug, id));
-const stationById = (id) => data.metro.stations.find((s) =>
-  sameIdentifier(s.id, id) || sameIdentifier(s.slug, id) || sameIdentifier(s.name, id));
-const valid = (p) => p.locationVerified && Number.isFinite(p.lat) && Number.isFinite(p.lng);
+
+const byId = (id) => findPandal(data?.pandals || [], id);
+const stationById = (id) => findStation(data?.metro?.stations || [], id);
+const valid = (p) => p && p.locationVerified && Number.isFinite(p.lat) && Number.isFinite(p.lng);
 
 function toast(message) {
   const node = $('#toast');
@@ -33,7 +31,7 @@ function toast(message) {
   node.textContent = message;
   node.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => node.classList.remove('show'), 2600);
+  toastTimer = setTimeout(() => node.classList.remove('show'), 2800);
 }
 
 function applyTheme() {
@@ -59,12 +57,16 @@ function renderFooter() {
   if (document.querySelector('.site-footer')) return;
   const footer = document.createElement('footer');
   footer.className = 'site-footer pad';
-  footer.innerHTML = '<strong>Pujo Planner</strong><span>Kolkata Durga Puja 2026</span>';
+  footer.innerHTML = '<div class="footer-content"><strong>Pujo Planner</strong><span>Kolkata Durga Puja 2026</span></div>';
   document.body.append(footer);
 }
 
 function renderMobileNav() {
-  const nav = document.querySelector('.mobile-nav') || document.body.appendChild(document.createElement('nav'));
+  let nav = document.querySelector('.mobile-nav');
+  if (!nav) {
+    nav = document.createElement('nav');
+    document.body.appendChild(nav);
+  }
   nav.className = 'mobile-nav';
   nav.setAttribute('aria-label', 'Primary mobile navigation');
   const root = page === 'home' ? '' : '../';
@@ -75,9 +77,9 @@ function renderMobileNav() {
     ['favourites', 'pages/favourites.html', '♥', 'Saved'],
     ['planner', 'pages/planner.html', '📋', 'Plan']
   ];
+  const activePage = (page === 'pandal' ? 'explore' : page === 'metro-station' ? 'map' : page === 'metro' ? 'map' : page);
   nav.innerHTML = items.map(([key, href, icon, label]) => {
-    const active = key === page || (page === 'pandal' && key === 'explore') ||
-      (page === 'metro' && key === 'map') || (page === 'metro-station' && key === 'map');
+    const active = key === activePage;
     return `<a class="mobile-nav-item${active ? ' active' : ''}" href="${root}${href}"${active ? ' aria-current="page"' : ''}>
       <span aria-hidden="true">${icon}</span><small>${label}</small></a>`;
   }).join('');
@@ -87,11 +89,11 @@ function renderDesktopNav() {
   const nav = document.querySelector('.site-nav');
   if (!nav) return;
   const labels = [
-    ['explore', 'Pandals'],
+    ['explore', 'Explore'],
     ['map', 'Map'],
     ['metro', 'Metro'],
-    ['planner', 'Plan'],
-    ['favourites', 'Saved'],
+    ['planner', 'Planner'],
+    ['favourites', 'Favourites'],
     ['guide', 'Guide']
   ];
   const activePage = page === 'pandal' ? 'explore' : page === 'metro-station' ? 'metro' : page;
@@ -130,27 +132,40 @@ function renderSuggestions(query) {
   const node = $('#suggestions');
   if (!node) return;
   const q = query.trim().toLowerCase();
-  const pandals = q ? data.pandals.filter((p) =>
+  if (!q) {
+    node.innerHTML = '';
+    node.hidden = true;
+    return;
+  }
+  const pandals = data.pandals.filter((p) =>
     [p.name, p.nameBn, p.area, p.areaGroup, p.region, p.googleMapsQuery]
       .filter(Boolean).some((value) => value.toLowerCase().includes(q)) ||
-    (p.metro?.station?.name || '').toLowerCase().includes(q)).slice(0, 5) : [];
-  const stations = q ? data.metro.stations.filter((s) => s.name.toLowerCase().includes(q)).slice(0, 3) : [];
+    (p.metro?.station?.name || '').toLowerCase().includes(q)).slice(0, 5);
+  const stations = data.metro.stations.filter((s) =>
+    s.name.toLowerCase().includes(q) || (s.region && s.region.toLowerCase().includes(q))
+  ).slice(0, 3);
+
   const results = [
     ...stations.map((s) => `<a class="search-result" href="${pageUrl('metro-station', { id: s.id })}">
       <span class="search-result-icon" aria-hidden="true">🚇</span>
-      <span class="search-result-content"><strong class="search-result-title">${ui.esc(s.name)}</strong>
-        <small class="search-result-meta">Metro Station · ${ui.esc(s.lines.map((line) => data.metro.lines[line]?.name || line).join(' / '))}</small></span>
+      <span class="search-result-content">
+        <strong class="search-result-title">${ui.esc(s.name)}</strong>
+        <small class="search-result-meta">${ui.esc(ui.stationRegionLabel(s))}</small>
+      </span>
     </a>`),
     ...pandals.map((p) => `<a class="search-result" href="${pageUrl('pandal', { id: p.id })}">
       <span class="search-result-icon" aria-hidden="true">🛕</span>
-      <span class="search-result-content"><strong class="search-result-title">${ui.esc(ui.pName(p))}</strong>
-        <small class="search-result-meta">${ui.esc(t(`area.${p.area}`))} · Pandal</small></span>
+      <span class="search-result-content">
+        <strong class="search-result-title">${ui.esc(p.name)}</strong>
+        <small class="search-result-meta">${ui.esc(p.areaGroup || p.area)} • ${ui.esc(p.region ? p.region.charAt(0).toUpperCase() + p.region.slice(1) + ' Kolkata' : 'Kolkata')}</small>
+      </span>
     </a>`)
   ];
-  node.innerHTML = [
-    results.length ? `<div class="search-results-heading">Search results</div>${results.join('')}` : ''
-  ].join('');
-  node.hidden = !pandals.length && !stations.length;
+
+  node.innerHTML = results.length
+    ? `<div class="search-results-heading">Search suggestions</div>${results.join('')}`
+    : `<div class="search-results-empty"><small>No results found for "${ui.esc(query)}"</small></div>`;
+  node.hidden = false;
 }
 
 function renderCards() {
@@ -191,15 +206,24 @@ function renderDiscovery() {
   const list = $('#map-discovery-list');
   if (!list) return;
   const state = store.get();
-  const region = new URLSearchParams(location.search).get('region') || state.mapRegion;
   const query = new URLSearchParams(location.search);
-  const stationId = query.get('station') || query.get('id') || state.mapMetro;
+  const region = query.get('region') || state.mapRegion || 'north';
+  const stationId = query.get('station') || query.get('id');
   const station = stationById(stationId);
   const stations = getMetroStationsByRegion(region, data.metro.stations);
-  const nearby = station ? getPandalsNearMetro(station, data.pandals, data.config.map?.metroPandalRadiusKm || 2) : [];
+  const nearby = station ? getPandalsNearMetro(station, data.pandals) : [];
   list.innerHTML = ui.mapDiscoveryHtml({
     region, station, stations, nearby, lines: data.metro.lines, favs: new Set(state.favs)
   });
+
+  const regionChips = document.querySelectorAll('.map-regions a');
+  regionChips.forEach((chip) => {
+    const href = chip.getAttribute('href') || '';
+    const isActive = href.includes(`region=${region}`);
+    chip.classList.toggle('active', isActive);
+    chip.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+  });
+
   if ($('#map')) map.filterMetro(region ? stations : data.metro.stations);
 }
 
@@ -211,9 +235,13 @@ function renderPage() {
   renderFooter();
   renderDesktopNav();
   renderMobileNav();
+
   const featured = $('#featured-list');
-  if (featured) featured.innerHTML = data.pandals.filter((p) => p.featured).slice(0, 5)
-    .map((p) => ui.featuredHtml(p, data.metro.lines)).join('');
+  if (featured) {
+    const famous5 = getHomeFeatured(data.pandals);
+    featured.innerHTML = famous5.map((p) => ui.featuredHtml(p, data.metro.lines)).join('');
+  }
+
   if (page === 'explore') renderCards();
   if (page === 'planner') renderPlan();
   if (page === 'guide') {
@@ -226,11 +254,15 @@ function renderPage() {
   }
   if (page === 'pandal') {
     const query = new URLSearchParams(location.search);
-    const id = query.get('id') || query.get('slug');
+    const id = query.get('id') || query.get('slug') || query.get('pandal');
     const detail = $('#detail-view');
     const pandal = byId(id);
-    if (detail) detail.innerHTML = pandal ? ui.detailViewHtml(pandal, data.metro.lines, state.favs.includes(pandal.id)) :
-      ui.notFoundHtml('Pandal', 'explore.html');
+    const inPlan = pandal ? state.stops.includes(pandal.id) : false;
+    const isFav = pandal ? state.favs.includes(pandal.id) : false;
+    if (detail) {
+      detail.innerHTML = pandal ? ui.detailViewHtml(pandal, data.metro.lines, isFav, inPlan) :
+        ui.notFoundHtml('Pandal', 'explore.html');
+    }
     if (pandal && $('#map')) {
       map.sync(data.pandals, new Set([pandal.id]), new Map(), new Set(state.favs),
         (p) => ui.popupHtml(p, { inPlan: state.stops.includes(p.id), lines: data.metro.lines }));
@@ -239,40 +271,87 @@ function renderPage() {
   }
   if (page === 'metro-station') {
     const query = new URLSearchParams(location.search);
-    const station = stationById(query.get('id') || query.get('slug') || query.get('name'));
+    const id = query.get('id') || query.get('slug') || query.get('name') || query.get('station');
+    const station = stationById(id);
     const detail = $('#station-detail-view');
-    if (detail) detail.innerHTML = station
-      ? ui.metroStationDetailHtml(station, getPandalsNearMetro(
-        station, data.pandals, data.config.map?.metroPandalRadiusKm || 2
-      ), data.metro.lines)
-      : ui.notFoundHtml('Metro station', 'metro.html');
+    if (detail) {
+      if (station) {
+        const nearby = getPandalsNearMetro(station, data.pandals);
+        detail.innerHTML = ui.metroStationDetailHtml(station, nearby, data.metro.lines, new Set(state.favs), new Set(state.stops));
+      } else {
+        detail.innerHTML = ui.notFoundHtml('Metro station', 'metro.html');
+      }
+    }
   }
   if (page === 'map' || page === 'metro') renderDiscovery();
   const badge = $('#plan-badge');
   if (badge) badge.textContent = state.stops.length || '';
+
   if (page === 'home') {
     const regions = $('#home-regions');
-    if (regions) regions.innerHTML = ['north', 'south', 'central'].map((region) =>
-      `<a class="route-chip ${region}" href="${pageUrl('explore', { region })}">${t(`route.${region}`)}</a>`).join('');
+    if (regions) {
+      regions.innerHTML = [
+        { key: 'north', icon: '🟠', nameBn: 'উত্তর কলকাতা', nameEn: 'North Kolkata' },
+        { key: 'south', icon: '🔵', nameBn: 'দক্ষিণ কলকাতা', nameEn: 'South Kolkata' },
+        { key: 'central', icon: '🟢', nameBn: 'মধ্য কলকাতা', nameEn: 'Central Kolkata' }
+      ].map((r) => {
+        const label = lang() === 'bn' ? r.nameBn : r.nameEn;
+        return `<a class="route-chip ${r.key}" href="pages/metro.html?region=${r.key}">
+          <span class="route-chip-icon">${r.icon}</span>
+          <span class="route-chip-title">${ui.esc(label)}</span>
+          <small class="route-chip-desc">Metro & Pandals →</small>
+        </a>`;
+      }).join('');
+    }
   }
+
   if ($('#map') && page === 'map') {
     const list = visible(state);
     const order = new Map(state.stops.map((id, i) => [id, i + 1]));
     map.sync(data.pandals, new Set(list.map((p) => p.id)), order, new Set(state.favs),
       (p) => ui.popupHtml(p, { inPlan: state.stops.includes(p.id), lines: data.metro.lines }));
     map.fit(data.pandals.filter(valid));
+
     const query = new URLSearchParams(location.search);
-    const selectedPandal = byId(query.get('pandal'));
-    if (selectedPandal && valid(selectedPandal)) map.focus(selectedPandal.id);
+    const pandalParam = query.get('pandal');
+    if (pandalParam) {
+      const selectedPandal = byId(pandalParam);
+      if (selectedPandal) {
+        if (valid(selectedPandal)) {
+          map.focus(selectedPandal.id);
+        } else {
+          toast(`📍 ${ui.pName(selectedPandal)}: Location verification pending. Showing Kolkata Durga Puja map.`);
+        }
+      }
+    }
+    const stationParam = query.get('station');
+    if (stationParam) {
+      const selectedStation = stationById(stationParam);
+      if (selectedStation) {
+        map.focusMetro(selectedStation);
+      }
+    }
   }
 }
 
 function action(el) {
   const state = store.get();
   const id = el.dataset.id;
-  if (el.dataset.action === 'add' && id && !state.stops.includes(id)) store.set({ stops: [...state.stops, id] });
-  if (el.dataset.action === 'remove') store.set({ stops: state.stops.filter((item) => item !== id) });
-  if (el.dataset.action === 'fav') store.set({ favs: state.favs.includes(id) ? state.favs.filter((item) => item !== id) : [...state.favs, id] });
+  if (el.dataset.action === 'add' && id) {
+    if (!state.stops.includes(id)) {
+      store.set({ stops: [...state.stops, id] });
+      toast('Added to your Puja plan ✓');
+    }
+  }
+  if (el.dataset.action === 'remove' && id) {
+    store.set({ stops: state.stops.filter((item) => item !== id) });
+    toast('Removed from your Puja plan');
+  }
+  if (el.dataset.action === 'fav' && id) {
+    const isFav = state.favs.includes(id);
+    store.set({ favs: isFav ? state.favs.filter((item) => item !== id) : [...state.favs, id] });
+    toast(isFav ? 'Removed from favourites' : 'Saved to favourites ♥');
+  }
   if (el.dataset.action === 'up' || el.dataset.action === 'down') {
     const index = state.stops.indexOf(id);
     const next = index + (el.dataset.action === 'up' ? -1 : 1);
@@ -284,7 +363,10 @@ function action(el) {
     const info = startInfo(state);
     store.set({ stops: route.orderStops(info.point, state.stops.map(byId).filter(Boolean)).map((p) => p.id) });
   }
-  if (el.dataset.action === 'clear') store.set({ stops: [] });
+  if (el.dataset.action === 'clear') {
+    store.set({ stops: [] });
+    toast('Puja plan cleared');
+  }
   if (el.dataset.action === 'lang') store.set({ lang: lang() === 'bn' ? 'en' : 'bn' });
   if (el.dataset.action === 'theme') store.set({ theme: document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark' });
   if (el.dataset.action === 'area') store.set({ area: el.dataset.value });
@@ -299,23 +381,36 @@ function action(el) {
     location.href = pageUrl('metro-station', { id });
     return;
   }
+  if (el.dataset.action === 'map-back-region') {
+    const query = new URLSearchParams(location.search);
+    const reg = query.get('region') || state.mapRegion || 'north';
+    location.href = pageUrl('metro', { region: reg });
+    return;
+  }
   if (el.dataset.action === 'view-map') {
     const pandal = byId(id);
     if (!pandal) return;
-    if (!valid(pandal)) {
-      toast('Map location is unavailable until this pandal is verified.');
-      return;
-    }
     location.href = pageUrl('map', { pandal: pandal.id });
     return;
   }
-  if (el.dataset.action === 'locate' && navigator.geolocation) navigator.geolocation.getCurrentPosition((pos) => {
-    const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-    store.set({ userLoc: loc }); map.setUser(loc, true);
-    const nearest = nearestStation(loc, data.metro.stations);
-    if (nearest) toast(t('loc.found', { s: nearest.station.name, km: `~${fmtKm(nearest.walkKm)}` }));
-  }, () => toast(t('loc.denied')));
-  if (el.dataset.action === 'close-details') history.back();
+  if (el.dataset.action === 'locate' && navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition((pos) => {
+      const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      store.set({ userLoc: loc });
+      map.setUser(loc, true);
+      const nearest = nearestStation(loc, data.metro.stations);
+      if (nearest) toast(t('loc.found', { s: nearest.station.name, km: `~${fmtKm(nearest.walkKm)}` }));
+    }, () => {
+      toast('Location access was not granted. You can still browse all pandals and metro stations on the map.');
+    });
+  }
+  if (el.dataset.action === 'close-details') {
+    if (window.history.length > 1) {
+      history.back();
+    } else {
+      location.href = page === 'metro-station' ? 'metro.html' : 'explore.html';
+    }
+  }
 }
 
 function wire() {
@@ -332,7 +427,15 @@ function wire() {
   if (search) search.addEventListener('input', (event) => store.set({ q: event.target.value }));
   const homeSearch = $('#home-search');
   if (homeSearch) homeSearch.addEventListener('input', (event) => {
-    store.set({ q: event.target.value }); renderSuggestions(event.target.value);
+    store.set({ q: event.target.value });
+    renderSuggestions(event.target.value);
+  });
+  // Close suggestions when clicking outside
+  document.addEventListener('click', (event) => {
+    const suggestions = $('#suggestions');
+    if (suggestions && !suggestions.hidden && !event.target.closest('.search-wrap')) {
+      suggestions.hidden = true;
+    }
   });
   store.subscribe(renderPage);
 }
@@ -345,7 +448,11 @@ async function boot() {
   const query = new URLSearchParams(location.search);
   const region = query.get('region');
   if (region && ['north', 'south', 'central'].includes(region)) store.set({ area: region, mapRegion: region });
-  if ($('#map')) map.init($('#map'), data.metro.stations, data.metro.lines, (s) => ui.mapStationPopupHtml(s, data.metro.lines));
+  if ($('#map')) {
+    map.init($('#map'), data.metro.stations, data.metro.lines, (s) =>
+      ui.mapStationPopupHtml(s, data.metro.lines, getPandalsNearMetro(s, data.pandals, 2))
+    );
+  }
   renderPage();
 }
 
@@ -354,3 +461,4 @@ boot().catch((error) => {
   const notice = $('#notice');
   if (notice) { notice.hidden = false; notice.textContent = t('error.data'); }
 });
+
