@@ -31,10 +31,11 @@ export function validatePandals(records) {
 
 /** Load and validate all data; unverified pandals remain searchable but are not mapped. */
 export async function loadAll() {
+  const root = typeof document !== 'undefined' && document.body?.dataset.page === 'home' ? '' : '../';
   const [pandals, metro, config] = await Promise.all([
-    getJson('data/pandals.json'),
-    getJson('data/metro.json'),
-    getJson('data/config.json')
+    getJson(`${root}data/pandals.json`),
+    getJson(`${root}data/metro.json`),
+    getJson(`${root}data/config.json`)
   ]);
   const ok = validatePandals(pandals);
   metro.stations = metro.stations.filter((s) => {

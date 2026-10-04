@@ -1,9 +1,11 @@
 // Service worker: app shell + data are cached for offline use.
 // Map tiles are intentionally NOT cached (OpenStreetMap tile policy discourages bulk caching).
-const VERSION = 'pujo-v9';
+const VERSION = 'pujo-v10';
 const SHELL = [
   './', 'index.html', 'manifest.json', 'css/style.css', 'img/icon.svg',
-  'js/main.js', 'js/state.js', 'js/i18n.js', 'js/data.js', 'js/geo.js', 'js/metro.js',
+  'pages/explore.html', 'pages/pandal.html', 'pages/map.html', 'pages/metro.html',
+  'pages/metro-station.html', 'pages/planner.html', 'pages/favourites.html', 'pages/guide.html',
+  'js/app.js', 'js/main.js', 'js/state.js', 'js/i18n.js', 'js/data.js', 'js/geo.js', 'js/metro.js',
   'js/route.js', 'js/share.js', 'js/timeline.js', 'js/map.js', 'js/ui.js',
   'data/pandals.json', 'data/metro.json', 'data/config.json'
 ];

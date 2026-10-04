@@ -1,125 +1,26 @@
 <!doctype html>
 <html lang="bn" data-theme="light">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Pujo Planner | পুজো প্ল্যানার</title>
   <meta name="description" content="Plan your Durga Puja pandal hopping with Kolkata Metro and Google Maps.">
-  <meta name="theme-color" content="#B0102A">
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="img/icon.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <meta name="theme-color" content="#B0102A"><link rel="manifest" href="manifest.json"><link rel="icon" href="img/icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600&family=Tiro+Bangla&display=swap">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-  <link rel="stylesheet" href="css/style.css?v=20261004-8">
-  <script>
-    // set theme before first paint to avoid a light flash
-    try {
-      var s = JSON.parse(localStorage.getItem('pujo-planner:v1') || '{}');
-      var dark = s.theme ? s.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
-      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-    } catch (e) {}
-  </script>
+  <link rel="stylesheet" href="css/style.css?v=20261004-10">
+  <script>try{const s=JSON.parse(localStorage.getItem('pujo-planner:v1')||'{}');document.documentElement.dataset.theme=(s.theme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'));}catch(e){}</script>
 </head>
-<body>
-  <header class="top">
-    <div class="top-row">
-      <div>
-        <h1 data-i18n="title">পুজো প্ল্যানার</h1>
-        <p class="brand-subtitle" data-i18n="subtitle">কলকাতা • দুর্গাপূজা ২০২৬</p>
-        <p class="countdown" id="countdown" aria-live="polite"></p>
-      </div>
-      <div class="tools">
-        <button class="icon-btn" id="btn-lang" data-action="lang" aria-label="Language">EN</button>
-        <button class="icon-btn" id="btn-theme" data-action="theme" data-i18n-label="btn.theme" aria-label="Switch theme">◐</button>
-      </div>
-    </div>
-  </header>
-
+<body data-page="home">
+  <header class="top"><div class="top-row"><div><h1 data-i18n="title">পুজো প্ল্যানার</h1><p class="brand-subtitle" data-i18n="subtitle">কলকাতা • দুর্গাপূজা ২০২৬</p><p class="countdown" id="countdown"></p></div><div class="tools"><button class="icon-btn" data-action="lang" id="btn-lang">EN</button><button class="icon-btn" data-action="theme" id="btn-theme">◐</button></div></div>
+    <nav class="site-nav" aria-label="Primary"><a href="index.html">Home</a><a href="pages/explore.html">Explore</a><a href="pages/map.html">Map</a><a href="pages/metro.html">Metro</a><a href="pages/planner.html">Planner</a><a href="pages/favourites.html">Favourites</a><a href="pages/guide.html">Guide</a></nav></header>
   <main class="app">
-    <section id="detail-view" class="detail-view" hidden aria-live="polite"></section>
-    <section id="wishlist-view" class="panel wishlist-view" hidden aria-live="polite"></section>
-    <section class="hero" aria-labelledby="hero-title">
-      <div class="hero-copy">
-        <p class="eyebrow" data-i18n="hero.eyebrow">শুভ শারদীয়া</p>
-        <h2 id="hero-title" data-i18n="hero.title">কলকাতার দুর্গাপূজায় উৎসবের পথ খুঁজুন</h2>
-        <p data-i18n="hero.body">প্যান্ডেল খুঁজুন, কাছের মেট্রো দেখুন, আর Google Maps-এ পথ দেখুন।</p>
-        <label class="visually-hidden" for="home-search" data-i18n="search.label">খুঁজুন</label>
-        <input class="home-search" id="home-search" type="search" autocomplete="off" data-i18n-ph="home.search" placeholder="প্যান্ডেল, এলাকা বা মেট্রো খুঁজুন">
-        <div id="suggestions" class="suggestions" hidden></div>
-        <div class="hero-actions">
-          <button class="btn btn-primary" data-action="hero-explore" data-i18n="hero.explore">Explore pandals</button>
-          <button class="btn btn-ghost" data-action="hero-plan" data-i18n="hero.plan">Plan your Puja</button>
-        </div>
-      </div>
-    </section>
-    <section class="route-categories" aria-label="Puja routes">
-      <button class="route-chip north" data-action="route-group" data-value="north" data-i18n="route.north">🟠 উত্তর কলকাতা</button>
-      <button class="route-chip south" data-action="route-group" data-value="south" data-i18n="route.south">🔵 দক্ষিণ কলকাতা</button>
-      <button class="route-chip central" data-action="route-group" data-value="central" data-i18n="route.central">🟢 মধ্য কলকাতা</button>
-    </section>
-    <section class="featured-section" aria-labelledby="featured-title">
-      <div class="section-heading"><h2 id="featured-title" data-i18n="featured.title">জনপ্রিয় প্যান্ডেল</h2><button class="text-btn" data-action="hero-explore" data-i18n="featured.all">সব দেখুন</button></div>
-      <div id="featured-list" class="featured-list"></div>
-    </section>
-    <section class="map-wrap" aria-label="Map">
-      <div class="map-heading">
-        <h2 data-i18n="map.title">🗺️ প্যান্ডেল ম্যাপ</h2>
-        <p data-i18n="map.subtitle">কাছের প্যান্ডেল ও মেট্রো স্টেশন</p>
-      </div>
-      <div id="map"></div>
-      <div class="map-legend" aria-label="Map legend">
-        <span><i class="legend-pandal" aria-hidden="true">🛕</i><span data-i18n="map.legendPandal">প্যান্ডেল</span></span>
-        <span><i class="legend-metro" aria-hidden="true">🚇</i><span data-i18n="map.legendMetro">মেট্রো</span></span>
-        <span><i class="legend-user" aria-hidden="true">●</i><span data-i18n="map.legendUser">আমার লোকেশন</span></span>
-      </div>
-      <button class="btn fab" data-action="locate" data-i18n="btn.locate">আমার কাছে</button>
-      <section class="map-discovery" aria-label="Map discovery">
-        <div class="map-regions">
-          <button class="chip" data-action="map-region" data-value="north" data-i18n="route.north">🟠 উত্তর কলকাতা</button>
-          <button class="chip" data-action="map-region" data-value="south" data-i18n="route.south">🔵 দক্ষিণ কলকাতা</button>
-          <button class="chip" data-action="map-region" data-value="central" data-i18n="route.central">🟣 মধ্য কলকাতা</button>
-        </div>
-        <div id="map-breadcrumb" class="map-breadcrumb"></div>
-        <div id="map-discovery-list"></div>
-      </section>
-      <div class="map-summary">
-        <strong data-i18n="map.nearby">🛕 কাছের প্যান্ডেল</strong>
-        <span id="map-summary-count"></span>
-      </div>
-    </section>
-
-    <section class="panel">
-      <nav class="tabs" role="tablist">
-        <button class="tab" role="tab" data-action="tab" data-tab="explore" aria-selected="true"><span data-i18n="tab.explore">ঘুরে দেখুন</span></button>
-        <button class="tab" role="tab" data-action="tab" data-tab="plan" aria-selected="false"><span data-i18n="tab.plan">আমার প্ল্যান</span><span class="badge" id="plan-badge"></span></button>
-        <button class="tab" role="tab" data-action="tab" data-tab="guide" aria-selected="false"><span data-i18n="tab.guide">গাইড</span></button>
-      </nav>
-
-      <div class="tabpane" id="tab-explore">
-        <p class="notice" id="notice" hidden></p>
-        <label class="visually-hidden" for="search" data-i18n="search.label">খুঁজুন</label>
-        <input class="search" id="search" type="search" autocomplete="off" data-i18n-ph="search.ph" placeholder="প্যান্ডেল বা এলাকা খুঁজুন">
-        <div id="chips"></div>
-        <p class="count" id="count" aria-live="polite"></p>
-        <div id="list"></div>
-      </div>
-      <div class="tabpane" id="tab-plan" hidden></div>
-      <div class="tabpane" id="tab-guide" hidden></div>
-    </section>
+    <section class="hero"><div class="hero-copy"><p class="eyebrow" data-i18n="hero.eyebrow">শুভ শারদীয়া</p><h2 data-i18n="hero.title">কলকাতার দুর্গাপূজায় উৎসবের পথ খুঁজুন</h2><p data-i18n="hero.body">প্যান্ডেল খুঁজুন, কাছের মেট্রো দেখুন, আর Google Maps-এ পথ দেখুন।</p>
+      <label class="visually-hidden" for="home-search">Search pandals</label><input class="home-search" id="home-search" type="search" autocomplete="off" placeholder="প্যান্ডেল, এলাকা বা মেট্রো খুঁজুন"><div id="suggestions" class="suggestions" hidden></div>
+      <div class="hero-actions"><a class="btn btn-primary" href="pages/explore.html" data-i18n="hero.explore">Explore pandals</a><a class="btn btn-ghost" href="pages/planner.html" data-i18n="hero.plan">Plan your Puja</a></div></div></section>
+    <section class="route-categories" id="home-regions" aria-label="Puja routes"></section>
+    <section class="featured-section"><div class="section-heading"><h2 data-i18n="featured.title">জনপ্রিয় প্যান্ডেল</h2><a class="text-btn" href="pages/explore.html" data-i18n="featured.all">সব দেখুন</a></div><div id="featured-list" class="featured-list"></div></section>
+    <section class="panel pad"><h2 data-i18n="map.title">🗺️ প্যান্ডেল ম্যাপ</h2><p data-i18n="map.subtitle">কাছের প্যান্ডেল ও মেট্রো স্টেশন</p><a class="btn btn-primary" href="pages/map.html">Open full map</a><a class="btn btn-ghost" href="pages/metro.html">Explore Metro</a></section>
   </main>
-
-  <nav class="mobile-nav" aria-label="Mobile navigation">
-    <button data-action="mobile-home"><span>⌂</span><small data-i18n="nav.home">Home</small></button>
-    <button data-action="mobile-pandals"><span>🛕</span><small data-i18n="nav.pandals">Pandals</small></button>
-    <button data-action="mobile-map"><span>🗺️</span><small data-i18n="nav.map">Map</small></button>
-    <button data-action="mobile-saved"><span>♥</span><small data-i18n="nav.saved">Saved</small></button>
-    <button data-action="tab" data-tab="plan"><span>📋</span><small data-i18n="nav.plan">My plan</small></button>
-  </nav>
-  <div id="toast" role="status" aria-live="polite"></div>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-  <script type="module" src="js/main.js?v=20261004-9"></script>
-</body>
-</html>
+  <nav class="mobile-nav"><a href="index.html">⌂<small>Home</small></a><a href="pages/explore.html">🛕<small>Pandals</small></a><a href="pages/map.html">🗺️<small>Map</small></a><a href="pages/favourites.html">♥<small>Saved</small></a><a href="pages/planner.html">📋<small>Plan</small></a></nav>
+  <div id="toast" role="status"></div><script type="module" src="js/app.js?v=20261004-10"></script>
+</body></html>

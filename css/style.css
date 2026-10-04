@@ -92,6 +92,13 @@ a { color: var(--indigo); }
 }
 .mobile-nav { display: none; }
 
+.site-nav { display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 0 16px 10px; }
+.site-nav a { color: var(--muted); text-decoration: none; font-size: .9rem; }
+.site-nav a:hover, .site-nav a:focus-visible { color: var(--red); text-decoration: underline; }
+.detail-map { height: 320px; margin: 0 auto 24px; max-width: 760px; }
+.site-footer { display: grid; gap: 4px; margin-top: auto; border-top: 1px solid var(--line); color: var(--muted); }
+.site-footer span { font-size: .85rem; }
+
 /* ---------- buttons, chips ---------- */
 .btn, .icon-btn, .chip, .tab {
   cursor: pointer; min-height: 44px; border-radius: var(--radius); border: 1px solid var(--line);
@@ -251,10 +258,14 @@ select { min-height: 44px; padding: 0 10px; border-radius: var(--radius); border
 @media (prefers-reduced-motion: reduce) { #toast { transition: none; } }
 @media (max-width: 899px) {
   .app { padding-bottom: 90px; }
-  .mobile-nav { position: fixed; display: flex; left: 0; right: 0; bottom: 0; z-index: 1000; justify-content: space-around; padding: 7px 4px calc(7px + env(safe-area-inset-bottom, 0px)); background: var(--card); border-top: 1px solid var(--line); box-shadow: 0 -3px 16px rgb(0 0 0 / .08); }
-  .mobile-nav button { display: grid; gap: 1px; flex: 1; min-width: 0; min-height: 52px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); }
-  .mobile-nav button span { font-size: 1.1rem; }
-  .mobile-nav small { font: inherit; font-size: .72rem; }
+  .site-nav { display: none; }
+  body { padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
+  .mobile-nav { position: fixed; display: flex; left: 0; right: 0; bottom: 0; z-index: 1000; justify-content: space-around; gap: 4px; padding: 7px 6px calc(7px + env(safe-area-inset-bottom, 0px)); background: var(--card); border-top: 1px solid var(--line); box-shadow: 0 -3px 16px rgb(0 0 0 / .08); }
+  .mobile-nav-item { display: grid; place-items: center; align-content: center; gap: 1px; flex: 1; min-width: 0; min-height: 52px; border-radius: 12px; color: var(--muted); text-decoration: none; }
+  .mobile-nav-item span { font-size: 1.15rem; line-height: 1.2; }
+  .mobile-nav-item small { font: inherit; font-size: .72rem; line-height: 1.2; }
+  .mobile-nav-item.active { color: var(--red); background: var(--red-soft); font-weight: 600; }
+  .mobile-nav-item:hover, .mobile-nav-item:focus-visible { color: var(--red); }
   .actions .btn { flex: 1 1 100%; }
   .detail-grid { grid-template-columns: 1fr; }
 }
