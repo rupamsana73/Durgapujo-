@@ -94,7 +94,7 @@ The bundled data is **sample data**. Coordinates are approximate and were not ve
 
 ## Deploy
 
-Netlify: drag the project folder onto https://app.netlify.com/drop. GitHub Pages: push and enable Pages on the main branch.
+Netlify: drag the project folder onto https://pandelhopping.vercel.app/ GitHub Pages: push and enable Pages on the main branch.
 Both serve over HTTPS, which the Geolocation API and service worker require.
 
 ## Possible next steps
