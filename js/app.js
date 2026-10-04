@@ -20,7 +20,11 @@ const pageUrl = (name, params = {}) => {
 let data;
 let areas = [];
 let toastTimer;
-const byId = (id) => data.pandals.find((p) => String(p.id) === String(id));
+const sameIdentifier = (value, identifier) =>
+  value != null && identifier != null && String(value).toLowerCase() === String(identifier).toLowerCase();
+const byId = (id) => data.pandals.find((p) => sameIdentifier(p.id, id) || sameIdentifier(p.slug, id));
+const stationById = (id) => data.metro.stations.find((s) =>
+  sameIdentifier(s.id, id) || sameIdentifier(s.slug, id) || sameIdentifier(s.name, id));
 const valid = (p) => p.locationVerified && Number.isFinite(p.lat) && Number.isFinite(p.lng);
 
 function toast(message) {
@@ -90,10 +94,11 @@ function renderDesktopNav() {
     ['favourites', 'Saved'],
     ['guide', 'Guide']
   ];
+  const activePage = page === 'pandal' ? 'explore' : page === 'metro-station' ? 'metro' : page;
   nav.querySelectorAll('a').forEach((link) => {
     const match = labels.find(([key]) => link.getAttribute('href')?.includes(`${key}.html`));
     if (match) link.textContent = match[1];
-    const active = link.getAttribute('href')?.includes(`${page === 'home' ? 'index' : page}.html`);
+    const active = link.getAttribute('href')?.includes(`${activePage === 'home' ? 'index' : activePage}.html`);
     if (active) link.setAttribute('aria-current', 'page');
   });
 }
@@ -128,11 +133,22 @@ function renderSuggestions(query) {
   const pandals = q ? data.pandals.filter((p) =>
     [p.name, p.nameBn, p.area, p.areaGroup, p.region, p.googleMapsQuery]
       .filter(Boolean).some((value) => value.toLowerCase().includes(q)) ||
-    (p.metro?.station?.name || '').toLowerCase().includes(q)).slice(0, 6) : [];
+    (p.metro?.station?.name || '').toLowerCase().includes(q)).slice(0, 5) : [];
   const stations = q ? data.metro.stations.filter((s) => s.name.toLowerCase().includes(q)).slice(0, 3) : [];
+  const results = [
+    ...stations.map((s) => `<a class="search-result" href="${pageUrl('metro-station', { id: s.id })}">
+      <span class="search-result-icon" aria-hidden="true">🚇</span>
+      <span class="search-result-content"><strong class="search-result-title">${ui.esc(s.name)}</strong>
+        <small class="search-result-meta">Metro Station · ${ui.esc(s.lines.map((line) => data.metro.lines[line]?.name || line).join(' / '))}</small></span>
+    </a>`),
+    ...pandals.map((p) => `<a class="search-result" href="${pageUrl('pandal', { id: p.id })}">
+      <span class="search-result-icon" aria-hidden="true">🛕</span>
+      <span class="search-result-content"><strong class="search-result-title">${ui.esc(ui.pName(p))}</strong>
+        <small class="search-result-meta">${ui.esc(t(`area.${p.area}`))} · Pandal</small></span>
+    </a>`)
+  ];
   node.innerHTML = [
-    ...stations.map((s) => `<a href="${pageUrl('metro-station', { id: s.id })}"><strong>🚇 ${ui.esc(s.name)}</strong><span>Metro station</span></a>`),
-    ...pandals.map((p) => `<a href="${pageUrl('pandal', { id: p.id })}"><strong>${ui.esc(ui.pName(p))}</strong><span>${ui.esc(t(`area.${p.area}`))}</span></a>`)
+    results.length ? `<div class="search-results-heading">Search results</div>${results.join('')}` : ''
   ].join('');
   node.hidden = !pandals.length && !stations.length;
 }
@@ -176,8 +192,9 @@ function renderDiscovery() {
   if (!list) return;
   const state = store.get();
   const region = new URLSearchParams(location.search).get('region') || state.mapRegion;
-  const stationId = new URLSearchParams(location.search).get('id') || state.mapMetro;
-  const station = data.metro.stations.find((s) => s.id === stationId);
+  const query = new URLSearchParams(location.search);
+  const stationId = query.get('station') || query.get('id') || state.mapMetro;
+  const station = stationById(stationId);
   const stations = getMetroStationsByRegion(region, data.metro.stations);
   const nearby = station ? getPandalsNearMetro(station, data.pandals, data.config.map?.metroPandalRadiusKm || 2) : [];
   list.innerHTML = ui.mapDiscoveryHtml({
@@ -208,18 +225,29 @@ function renderPage() {
     if (saved) saved.innerHTML = ui.wishlistHtml(data.pandals.filter((p) => state.favs.includes(p.id)), data.metro.lines);
   }
   if (page === 'pandal') {
-    const id = new URLSearchParams(location.search).get('id');
+    const query = new URLSearchParams(location.search);
+    const id = query.get('id') || query.get('slug');
     const detail = $('#detail-view');
     const pandal = byId(id);
     if (detail) detail.innerHTML = pandal ? ui.detailViewHtml(pandal, data.metro.lines, state.favs.includes(pandal.id)) :
-      `<p class="empty">${t('list.empty')}</p>`;
+      ui.notFoundHtml('Pandal', 'explore.html');
     if (pandal && $('#map')) {
       map.sync(data.pandals, new Set([pandal.id]), new Map(), new Set(state.favs),
         (p) => ui.popupHtml(p, { inPlan: state.stops.includes(p.id), lines: data.metro.lines }));
       if (valid(pandal)) map.focus(pandal.id);
     }
   }
-  if (page === 'map' || page === 'metro' || page === 'metro-station') renderDiscovery();
+  if (page === 'metro-station') {
+    const query = new URLSearchParams(location.search);
+    const station = stationById(query.get('id') || query.get('slug') || query.get('name'));
+    const detail = $('#station-detail-view');
+    if (detail) detail.innerHTML = station
+      ? ui.metroStationDetailHtml(station, getPandalsNearMetro(
+        station, data.pandals, data.config.map?.metroPandalRadiusKm || 2
+      ), data.metro.lines)
+      : ui.notFoundHtml('Metro station', 'metro.html');
+  }
+  if (page === 'map' || page === 'metro') renderDiscovery();
   const badge = $('#plan-badge');
   if (badge) badge.textContent = state.stops.length || '';
   if (page === 'home') {
@@ -233,6 +261,9 @@ function renderPage() {
     map.sync(data.pandals, new Set(list.map((p) => p.id)), order, new Set(state.favs),
       (p) => ui.popupHtml(p, { inPlan: state.stops.includes(p.id), lines: data.metro.lines }));
     map.fit(data.pandals.filter(valid));
+    const query = new URLSearchParams(location.search);
+    const selectedPandal = byId(query.get('pandal'));
+    if (selectedPandal && valid(selectedPandal)) map.focus(selectedPandal.id);
   }
 }
 
@@ -266,6 +297,16 @@ function action(el) {
   if (el.dataset.action === 'focus' && $('#map')) map.focus(id);
   if (el.dataset.action === 'map-station') {
     location.href = pageUrl('metro-station', { id });
+    return;
+  }
+  if (el.dataset.action === 'view-map') {
+    const pandal = byId(id);
+    if (!pandal) return;
+    if (!valid(pandal)) {
+      toast('Map location is unavailable until this pandal is verified.');
+      return;
+    }
+    location.href = pageUrl('map', { pandal: pandal.id });
     return;
   }
   if (el.dataset.action === 'locate' && navigator.geolocation) navigator.geolocation.getCurrentPosition((pos) => {

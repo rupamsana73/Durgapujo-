@@ -83,7 +83,7 @@ export function featuredHtml(p, lines) {
     <p>${esc(t('area.' + p.area))}${metro ? ` · 🚇 ${esc(metro)}` : ''}</p>
     <div class="featured-actions">
       <button class="btn btn-primary btn-small" data-action="details" data-id="${p.id}">${t('btn.details')}</button>
-      <a class="btn btn-ghost btn-small" href="${placeUrl(p)}" ${ext}>${t('btn.directions')}</a>
+      <a class="btn btn-ghost btn-small" href="${dirUrl({ dest: p, mode: 'transit' })}" ${ext}>${t('btn.directions')}</a>
     </div>
   </article>`;
 }
@@ -107,7 +107,8 @@ export function metroPopupHtml(s, lines) {
 export function mapStationPopupHtml(s, lines) {
   const names = s.lines.map((l) => lines[l]?.name || l).join(', ');
   return `<div class="pop"><strong>🚇 ${esc(s.name)}</strong><p class="info muted">${esc(names)}</p>
-    <button class="btn btn-primary btn-small" data-action="map-station" data-id="${esc(s.id)}">${t('map.viewPandals')}</button></div>`;
+    <button class="btn btn-primary btn-small" data-action="map-station" data-id="${esc(s.id)}">Explore station</button>
+    <a class="btn btn-ghost btn-small" href="${dirUrl({ dest: s, mode: 'transit' })}" ${ext}>${t('btn.directions')}</a></div>`;
 }
 
 export function mapDiscoveryHtml({ region, station, stations, nearby, lines, favs = new Set() }) {
@@ -120,19 +121,21 @@ export function mapDiscoveryHtml({ region, station, stations, nearby, lines, fav
         <div class="discovery-link"><strong>📍 ${esc(pName(pandal))}</strong>
           <span>${distanceKm == null ? t('map.pending') : `~${fmtKm(distanceKm)} km · ${pandal.metro ? esc(pandal.metro.estimatedWalkingTime) : ''}`}</span></div>
         <div class="actions">
-          <button class="btn btn-primary btn-small" data-action="details" data-id="${pandal.id}">${t('btn.details')}</button>
-          <a class="btn btn-ghost btn-small" href="${placeUrl(pandal)}" ${ext}>${t('btn.directions')}</a>
+          <a class="btn btn-primary btn-small" href="pandal.html?id=${encodeURIComponent(pandal.id)}">${t('btn.details')}</a>
+          <a class="btn btn-ghost btn-small" href="${dirUrl({ dest: pandal, mode: 'transit' })}" ${ext}>${t('btn.directions')}</a>
           <button class="icon-btn" data-action="fav" data-id="${pandal.id}" aria-label="${t(favs.has(pandal.id) ? 'btn.unfav' : 'btn.fav')}" aria-pressed="${favs.has(pandal.id)}">${favs.has(pandal.id) ? '♥' : '♡'}</button>
         </div>
       </article>`).join('') : `<p class="empty">${t('map.noVerifiedPandals')}</p>`)
-    : stations.map((s) => `<button class="discovery-card station-card" data-action="map-station" data-id="${s.id}">
+    : stations.map((s) => `<a class="discovery-card station-card" href="metro-station.html?id=${encodeURIComponent(s.id)}">
         <strong>🚇 ${esc(s.name)}</strong><span>${esc(s.lines.map((l) => lines[l]?.name || l).join(' / '))}</span>
-      </button>`).join('');
+      </a>`).join('');
   return `<div class="discovery-heading">${stationHead}</div>${items}`;
 }
 
 export function detailViewHtml(p, lines, fav = false) {
   const metro = p.metro;
+  const metroLines = metro ? metro.station.lines.map((line) =>
+    (lang() === 'bn' ? lines[line]?.nameBn : lines[line]?.name) || line).join(' / ') : '';
   const nearby = (p.nearbyMetro || []).slice(0, 3).map((x) =>
     `<li><strong>${esc(x.station.name)}</strong><span>~${fmtKm(x.estimatedWalkingDistanceKm)} km · ${esc(x.estimatedWalkingTime)} ${t('detail.minutes')}</span>
       <a href="${dirUrl({ origin: x.station, dest: p, mode: 'walking' })}" ${ext}>${t('btn.walkFrom')}</a></li>`).join('');
@@ -146,20 +149,61 @@ export function detailViewHtml(p, lines, fav = false) {
     <button class="text-btn" data-action="close-details">← ${t('btn.back')}</button>
     <p class="eyebrow">${esc(t('area.' + p.area))}</p>
     <h2>${esc(pName(p))}</h2>
-    <p class="detail-region">${esc(p.region || p.area)} · ${esc(p.city || 'Kolkata')}</p>
+    <p class="detail-region">${esc(p.areaGroup || p.area)} · ${esc(p.region || p.area)} · ${esc(p.city || 'Kolkata')}</p>
+    <p class="hint">${p.locationVerified ? '✓ Verified location' : 'Location pending verification'}</p>
     <section class="detail-section"><h3>📍 ${t('detail.location')}</h3>
       <p>${esc(p.address || (p.locationVerified ? p.googleMapsQuery : t('map.pending')))}</p>
       <div class="actions"><button class="btn btn-primary" data-action="view-map" data-id="${p.id}">${t('btn.viewMap')}</button>
       <a class="btn btn-ghost" href="${placeUrl(p)}" ${ext}>${t('btn.gmaps')}</a></div>
     </section>
-    ${metro ? `<section class="detail-section"><h3>🚇 ${t('detail.metro')}</h3><p><strong>${esc(metro.station.name)}</strong><br>~${fmtKm(metro.estimatedWalkingDistanceKm)} km<br>${esc(metro.estimatedWalkingTime)} ${t('detail.minutes')}</p>
+    ${metro ? `<section class="detail-section"><h3>🚇 ${t('detail.metro')}</h3><p><strong>${esc(metro.station.name)}</strong><br>${esc(metroLines)}<br>~${fmtKm(metro.estimatedWalkingDistanceKm)} km<br>${esc(metro.estimatedWalkingTime)} ${t('detail.minutes')}</p>
       <a class="btn btn-ghost" href="${dirUrl({ origin: metro.station, dest: p, mode: 'walking' })}" ${ext}>${t('btn.walkFrom')}</a></section>` : `<section class="unverified"><strong>${t('detail.unverified')}</strong><p>${t('detail.verifyNote')}</p></section>`}
     ${nearby ? `<section class="detail-section"><h3>${t('detail.nearby')}</h3><ol class="nearby-list">${nearby}</ol></section>` : ''}
-    ${directions}
+    ${directions || `<section class="unverified"><strong>Directions unavailable</strong><p>This location has not been verified yet.</p></section>`}
     <section class="detail-section"><h3>${t('detail.howToReach')}</h3><p>${metro ? `${esc(metro.station.name)} → ${t('detail.walkEstimate')} → ${esc(pName(p))}` : t('detail.verifyNote')}</p></section>
     <div class="actions detail-actions"><button class="btn btn-primary" data-action="add" data-id="${p.id}">${t('btn.add')}</button>
       <button class="btn btn-ghost" data-action="fav" data-id="${p.id}" aria-pressed="${fav}">${fav ? '♥' : '♡'} ${t(fav ? 'btn.unfav' : 'btn.fav')}</button></div>
   </div>`;
+}
+
+export function metroStationDetailHtml(station, nearby, lines) {
+  const lineNames = station.lines
+    .map((line) => (lang() === 'bn' ? lines[line]?.nameBn : lines[line]?.name) || line)
+    .join(' / ');
+  const pandals = nearby.map(({ pandal, distanceKm }) => `<li class="nearby-item">
+    <div><strong>${esc(pName(pandal))}</strong><span>${esc(pandal.areaGroup || pandal.area || '')}
+      ${distanceKm == null ? '' : ` · ~${fmtKm(distanceKm)} km`}</span></div>
+    <div class="actions">
+      <a class="btn btn-primary btn-small" href="pandal.html?id=${encodeURIComponent(pandal.id)}">${t('btn.details')}</a>
+      <a class="btn btn-ghost btn-small" href="${placeUrl(pandal)}" ${ext}>${t('btn.gmaps')}</a>
+    </div>
+  </li>`).join('');
+  return `<div class="detail-page">
+    <button class="text-btn" data-action="close-details">← ${t('btn.back')}</button>
+    <p class="eyebrow">Metro station</p>
+    <h2>🚇 ${esc(station.name)}</h2>
+    <p class="detail-region">${esc(lineNames)} · ${esc(stationRegionLabel(station))}</p>
+    <section class="detail-section"><h3>Station details</h3><p>${esc(station.name)} · ${esc(lineNames)}<br>${station.lat}, ${station.lng}</p>
+      <div class="actions"><a class="btn btn-primary" href="${placeUrl(station)}" ${ext}>${t('btn.gmaps')}</a>
+        <a class="btn btn-ghost" href="${dirUrl({ dest: station, mode: 'transit' })}" ${ext}>${t('btn.directions')}</a></div>
+    </section>
+    <section class="detail-section"><h3>${t('detail.nearby')}</h3>
+      ${nearby.length ? `<ol class="nearby-list">${pandals}</ol>` : `<p class="empty">${t('map.noVerifiedPandals')}</p>`}
+      <a class="text-btn" href="map.html?station=${encodeURIComponent(station.id)}">View station on map →</a>
+    </section>
+  </div>`;
+}
+
+export function notFoundHtml(kind, backPage) {
+  return `<section class="empty-state"><h2>${esc(kind)} not found</h2>
+    <p>The requested ${esc(kind.toLowerCase())} could not be found.</p>
+    <a class="text-btn" href="${esc(backPage)}">← Back</a></section>`;
+}
+
+function stationRegionLabel(station) {
+  if (station.lat >= 22.59) return 'North Kolkata';
+  if (station.lat <= 22.55) return 'South Kolkata';
+  return 'Central Kolkata';
 }
 
 export function planHtml(v) {
