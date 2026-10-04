@@ -147,7 +147,7 @@ async function testAll() {
           logPass('Station page rendered: ' + stationText.slice(0, 50));
         }
 
-        const nearbyItems = await page.$$('.nearby-item, .nearby-card, .discovery-card');
+        const nearbyItems = await page.$$('.nearby-item, .nearby-card, .discovery-card, .nearby-pandal-card');
         console.log('Nearby pandals count on station page:', nearbyItems.length);
         if (nearbyItems.length === 0) {
           logError('No nearby pandals listed on station page');

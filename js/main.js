@@ -57,27 +57,63 @@ function visible(s) {
 function renderSuggestions(query) {
   const q = query.trim().toLowerCase();
   const el = $('#suggestions');
+  if (!el) return;
   if (!q) { el.hidden = true; el.innerHTML = ''; return; }
+
+  const categories = [
+    { key: 'north', nameEn: 'North Kolkata', nameBn: 'উত্তর কলকাতা', icon: '🟠' },
+    { key: 'south', nameEn: 'South Kolkata', nameBn: 'দক্ষিণ কলকাতা', icon: '🔵' },
+    { key: 'central', nameEn: 'Central Kolkata', nameBn: 'মধ্য কলকাতা', icon: '🟢' }
+  ].filter((c) =>
+    c.key.includes(q) ||
+    c.nameEn.toLowerCase().includes(q) ||
+    c.nameBn.includes(q) ||
+    (q.startsWith('dak') && c.key === 'south') ||
+    (q.startsWith('utt') && c.key === 'north') ||
+    (q.startsWith('mad') && c.key === 'central')
+  );
+
+  const catResults = categories.map((c) => `<a class="search-result category-result" href="pages/metro.html?region=${c.key}">
+    <span class="search-result-icon" aria-hidden="true">${c.icon}</span>
+    <span class="search-result-content">
+      <strong class="search-result-title">${ui.esc(lang() === 'bn' ? c.nameBn : c.nameEn)}</strong>
+      <small class="search-result-meta">Zone · Metro & Pandals</small>
+    </span>
+  </a>`);
+
+  const stations = D.metro.stations.filter((station) => station.name.toLowerCase().includes(q)).slice(0, 3);
+  const stationResults = stations.map((station) => `<a class="search-result metro-result" href="pages/metro-station.html?id=${station.id}">
+    <span class="search-result-icon" aria-hidden="true">🚇</span>
+    <span class="search-result-content">
+      <strong class="search-result-title">${ui.esc(station.name)}</strong>
+      <small class="search-result-meta">Metro station · ${ui.esc(station.name)}</small>
+    </span>
+  </a>`);
+
   const matches = D.pandals.filter((p) => p.name.toLowerCase().includes(q) ||
     (p.nameBn || '').includes(q) || (p.metro?.station?.name || '').toLowerCase().includes(q) ||
     (p.areaGroup || '').toLowerCase().includes(q) ||
     t('area.' + p.area).toLowerCase().includes(q) ||
-    p.area.includes(q) || (p.googleMapsQuery || '').toLowerCase().includes(q) ||
-    D.metro.stations.some((station) => station.name.toLowerCase().includes(q) &&
-      ((p.areaGroup || '').toLowerCase().includes(station.name.toLowerCase()) ||
-        (p.region === 'north' && station.lat >= 22.59) ||
-        (p.region === 'south' && station.lat <= 22.55) ||
-        (p.region === 'central' && station.lat > 22.55 && station.lat < 22.59)))).slice(0, 5);
-  const stations = D.metro.stations.filter((station) => station.name.toLowerCase().includes(q)).slice(0, 3);
-  el.innerHTML = [
-    ...stations.map((station) => `<button data-action="metro-suggestion" data-id="${station.id}">
-      <strong>🚇 ${ui.esc(station.name)}</strong><span>Metro station · ${ui.esc(station.name)}</span>
-    </button>`),
-    ...matches.map((p) => `<button data-action="suggestion" data-id="${p.id}">
-    <strong>${ui.esc(ui.pName(p))}</strong><span>${ui.esc(t('area.' + p.area))}${p.metro ? ` · 🚇 ${ui.esc(p.metro.station.name)}` : ''}</span>
-  </button>`)
-  ].join('');
-  el.hidden = !(matches.length || stations.length);
+    p.area.includes(q) || (p.googleMapsQuery || '').toLowerCase().includes(q)).slice(0, 5);
+
+  const pandalResults = matches.map((p) => {
+    const regionName = p.region
+      ? (p.region.charAt(0).toUpperCase() + p.region.slice(1) + ' Kolkata')
+      : (p.areaGroup || t('area.' + p.area) || 'Kolkata');
+    return `<a class="search-result pandal-result" href="pages/pandal.html?id=${p.id}">
+      <span class="search-result-icon" aria-hidden="true">🛕</span>
+      <span class="search-result-content">
+        <strong class="search-result-title">${ui.esc(ui.pName(p))}</strong>
+        <small class="search-result-meta">Pandal · ${ui.esc(regionName)}</small>
+      </span>
+    </a>`;
+  });
+
+  const allItems = [...catResults, ...stationResults, ...pandalResults];
+  el.innerHTML = allItems.length
+    ? `<div class="search-results-heading">Search suggestions</div>${allItems.join('')}`
+    : `<div class="search-results-empty"><small>No results found for "${ui.esc(query)}"</small></div>`;
+  el.hidden = false;
 }
 
 function stationRegion(station) {

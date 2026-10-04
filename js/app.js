@@ -137,33 +137,63 @@ function renderSuggestions(query) {
     node.hidden = true;
     return;
   }
-  const pandals = data.pandals.filter((p) =>
-    [p.name, p.nameBn, p.area, p.areaGroup, p.region, p.googleMapsQuery]
-      .filter(Boolean).some((value) => value.toLowerCase().includes(q)) ||
-    (p.metro?.station?.name || '').toLowerCase().includes(q)).slice(0, 5);
+
+  // Category / Region matches
+  const categories = [
+    { key: 'north', nameEn: 'North Kolkata', nameBn: 'উত্তর কলকাতা', icon: '🟠' },
+    { key: 'south', nameEn: 'South Kolkata', nameBn: 'দক্ষিণ কলকাতা', icon: '🔵' },
+    { key: 'central', nameEn: 'Central Kolkata', nameBn: 'মধ্য কলকাতা', icon: '🟢' }
+  ].filter((c) =>
+    c.key.includes(q) ||
+    c.nameEn.toLowerCase().includes(q) ||
+    c.nameBn.includes(q) ||
+    (q.startsWith('dak') && c.key === 'south') ||
+    (q.startsWith('utt') && c.key === 'north') ||
+    (q.startsWith('mad') && c.key === 'central')
+  );
+
+  const catResults = categories.map((c) => `<a class="search-result category-result" href="${pageUrl('metro', { region: c.key })}">
+    <span class="search-result-icon" aria-hidden="true">${c.icon}</span>
+    <span class="search-result-content">
+      <strong class="search-result-title">${ui.esc(lang() === 'bn' ? c.nameBn : c.nameEn)}</strong>
+      <small class="search-result-meta">Zone · Metro & Pandals</small>
+    </span>
+  </a>`);
+
   const stations = data.metro.stations.filter((s) =>
     s.name.toLowerCase().includes(q) || (s.region && s.region.toLowerCase().includes(q))
   ).slice(0, 3);
 
-  const results = [
-    ...stations.map((s) => `<a class="search-result" href="${pageUrl('metro-station', { id: s.id })}">
-      <span class="search-result-icon" aria-hidden="true">🚇</span>
-      <span class="search-result-content">
-        <strong class="search-result-title">${ui.esc(s.name)}</strong>
-        <small class="search-result-meta">${ui.esc(ui.stationRegionLabel(s))}</small>
-      </span>
-    </a>`),
-    ...pandals.map((p) => `<a class="search-result" href="${pageUrl('pandal', { id: p.id })}">
+  const stationResults = stations.map((s) => `<a class="search-result metro-result" href="${pageUrl('metro-station', { id: s.id })}">
+    <span class="search-result-icon" aria-hidden="true">🚇</span>
+    <span class="search-result-content">
+      <strong class="search-result-title">${ui.esc(s.name)}</strong>
+      <small class="search-result-meta">Metro station · ${ui.esc(s.name)}</small>
+    </span>
+  </a>`);
+
+  const pandals = data.pandals.filter((p) =>
+    [p.name, p.nameBn, p.area, p.areaGroup, p.region, p.googleMapsQuery]
+      .filter(Boolean).some((value) => value.toLowerCase().includes(q)) ||
+    (p.metro?.station?.name || '').toLowerCase().includes(q)).slice(0, 5);
+
+  const pandalResults = pandals.map((p) => {
+    const regionName = p.region
+      ? (p.region.charAt(0).toUpperCase() + p.region.slice(1) + ' Kolkata')
+      : (p.areaGroup || p.area || 'Kolkata');
+    return `<a class="search-result pandal-result" href="${pageUrl('pandal', { id: p.id })}">
       <span class="search-result-icon" aria-hidden="true">🛕</span>
       <span class="search-result-content">
         <strong class="search-result-title">${ui.esc(p.name)}</strong>
-        <small class="search-result-meta">${ui.esc(p.areaGroup || p.area)} • ${ui.esc(p.region ? p.region.charAt(0).toUpperCase() + p.region.slice(1) + ' Kolkata' : 'Kolkata')}</small>
+        <small class="search-result-meta">Pandal · ${ui.esc(regionName)}</small>
       </span>
-    </a>`)
-  ];
+    </a>`;
+  });
 
-  node.innerHTML = results.length
-    ? `<div class="search-results-heading">Search suggestions</div>${results.join('')}`
+  const allItems = [...catResults, ...stationResults, ...pandalResults];
+
+  node.innerHTML = allItems.length
+    ? `<div class="search-results-heading">Search suggestions</div>${allItems.join('')}`
     : `<div class="search-results-empty"><small>No results found for "${ui.esc(query)}"</small></div>`;
   node.hidden = false;
 }
@@ -296,7 +326,7 @@ function renderPage() {
         { key: 'central', icon: '🟢', nameBn: 'মধ্য কলকাতা', nameEn: 'Central Kolkata' }
       ].map((r) => {
         const label = lang() === 'bn' ? r.nameBn : r.nameEn;
-        return `<a class="route-chip ${r.key}" href="pages/metro.html?region=${r.key}">
+        return `<a class="route-chip category-link ${r.key}" href="pages/metro.html?region=${r.key}">
           <span class="route-chip-icon">${r.icon}</span>
           <span class="route-chip-title">${ui.esc(label)}</span>
           <small class="route-chip-desc">Metro & Pandals →</small>
