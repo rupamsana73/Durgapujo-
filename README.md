@@ -104,3 +104,5 @@ Both serve over HTTPS, which the Geolocation API and service worker require.
 - Drag-and-drop reordering in the plan
 - Pandal photos (add an `image` field and render it in `ui.js`)
 - something is new
+- we are developing the chatbot integration
+- 
