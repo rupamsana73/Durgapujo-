@@ -17,22 +17,48 @@
     height: 58px;
     border: 0;
     border-radius: 50%;
-    background: #b0102a;
+    background: radial-gradient(circle at 40% 35%, #d4182f 0%, #8b0a1e 100%);
     color: #fff;
     display: grid;
     place-items: center;
     cursor: pointer;
     pointer-events: auto; /* re-enable: root has pointer-events:none */
-    box-shadow: 0 8px 24px rgba(176, 16, 42, 0.35), 0 4px 12px rgba(0, 0, 0, 0.18);
+    box-shadow:
+        0 0 18px 4px rgba(218, 165, 32, 0.35),
+        0 8px 24px rgba(176, 16, 42, 0.35),
+        0 4px 12px rgba(0, 0, 0, 0.18);
     font-size: 26px;
     transition:
         transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
         box-shadow 0.22s ease;
+    animation: puja-ai-glow 3.5s ease-in-out infinite;
+    overflow: hidden;
+    padding: 0;
+    line-height: 1;
+}
+
+@keyframes puja-ai-glow {
+    0%, 100% {
+        box-shadow:
+            0 0 14px 3px rgba(218, 165, 32, 0.28),
+            0 8px 24px rgba(176, 16, 42, 0.35),
+            0 4px 12px rgba(0, 0, 0, 0.18);
+    }
+    50% {
+        box-shadow:
+            0 0 28px 8px rgba(218, 165, 32, 0.50),
+            0 10px 28px rgba(176, 16, 42, 0.45),
+            0 4px 14px rgba(0, 0, 0, 0.22);
+    }
 }
 
 .puja-ai-fab:hover {
     transform: translateY(-3px) scale(1.04);
-    box-shadow: 0 12px 30px rgba(176, 16, 42, 0.45), 0 6px 16px rgba(0, 0, 0, 0.22);
+    box-shadow:
+        0 0 32px 10px rgba(218, 165, 32, 0.55),
+        0 12px 30px rgba(176, 16, 42, 0.45),
+        0 6px 16px rgba(0, 0, 0, 0.22);
+    animation: none;
 }
 
 .puja-ai-fab:active {
@@ -40,8 +66,24 @@
 }
 
 .puja-ai-fab:focus-visible {
-    outline: 3px solid #ff99aa;
+    outline: 3px solid #daa520;
     outline-offset: 3px;
+}
+
+/* Puja AI branded SVG icon in FAB */
+.puja-ai-fab .puja-ai-brand-icon {
+    width: 36px;
+    height: 36px;
+    display: block;
+    filter: drop-shadow(0 0 3px rgba(255, 215, 0, 0.5));
+}
+
+/* Puja AI branded SVG icon in header */
+.puja-ai-header-icon .puja-ai-brand-icon {
+    width: 26px;
+    height: 26px;
+    display: block;
+    filter: drop-shadow(0 0 2px rgba(255, 215, 0, 0.4));
 }
 
 /* Chat panel */
@@ -107,7 +149,8 @@
     width: 38px;
     height: 38px;
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(218, 165, 32, 0.25);
 
     display: grid;
     place-items: center;
@@ -575,6 +618,20 @@
     border-color: #ff8598;
 }
 
+/* Dark theme — branding overrides */
+[data-theme="dark"] .puja-ai-fab {
+    background: radial-gradient(circle at 40% 35%, #a01025 0%, #5c0714 100%);
+    box-shadow:
+        0 0 18px 4px rgba(218, 165, 32, 0.22),
+        0 8px 24px rgba(120, 10, 28, 0.45),
+        0 4px 12px rgba(0, 0, 0, 0.30);
+}
+
+[data-theme="dark"] .puja-ai-header-icon {
+    background: rgba(255, 255, 255, 0.10);
+    border-color: rgba(218, 165, 32, 0.20);
+}
+
 /* =========================================================
    MOBILE RESPONSIVENESS & SAFE AREA
    ========================================================= */
@@ -589,6 +646,11 @@
         width: 52px;
         height: 52px;
         font-size: 23px;
+    }
+
+    .puja-ai-fab .puja-ai-brand-icon {
+        width: 32px;
+        height: 32px;
     }
 
     .puja-ai-panel {

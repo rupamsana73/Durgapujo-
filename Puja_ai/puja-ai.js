@@ -915,6 +915,83 @@ function restoreHistory(messagesEl) {
 }
 
 // -------------------------------------------------
+//  Puja AI Brand SVG — Diya + Alpana + Lotus motif
+// -------------------------------------------------
+function getPujaAiBrandSVG() {
+  return `<svg class="puja-ai-brand-icon" viewBox="0 -14 100 114" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <defs>
+    <linearGradient id="pujaFlameGrad" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%" stop-color="#daa520"/>
+      <stop offset="40%" stop-color="#ffd700"/>
+      <stop offset="85%" stop-color="#fff4c2"/>
+      <stop offset="100%" stop-color="#fffbe6"/>
+    </linearGradient>
+    <linearGradient id="pujaDiyaGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#daa520"/>
+      <stop offset="100%" stop-color="#b8860b"/>
+    </linearGradient>
+    <radialGradient id="pujaGlowGrad" cx="50%" cy="30%" r="45%">
+      <stop offset="0%" stop-color="rgba(255,215,0,0.35)"/>
+      <stop offset="100%" stop-color="rgba(255,215,0,0)"/>
+    </radialGradient>
+    <filter id="pujaNewGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="1.2" result="glow"/>
+      <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <!-- NEW badge -->
+  <text x="50" y="-2" text-anchor="middle" font-family="'Segoe UI','Inter',sans-serif" font-size="9.5" font-weight="800" fill="#daa520" letter-spacing="3" filter="url(#pujaNewGlow)">
+    NEW
+    <animate attributeName="opacity" dur="3s" values="0.8;1;0.8" repeatCount="indefinite"/>
+  </text>
+  <!-- Soft golden glow -->
+  <circle cx="50" cy="32" r="28" fill="url(#pujaGlowGrad)" opacity="0.7"/>
+  <!-- Flame — Durga-inspired elegant teardrop -->
+  <path d="M50 8 C50 8, 38 28, 38 38 C38 45, 43.5 50, 50 50 C56.5 50, 62 45, 62 38 C62 28, 50 8, 50 8Z" fill="url(#pujaFlameGrad)" opacity="0.95">
+    <animate attributeName="d" dur="2.8s" repeatCount="indefinite" values="
+      M50 8 C50 8, 38 28, 38 38 C38 45, 43.5 50, 50 50 C56.5 50, 62 45, 62 38 C62 28, 50 8, 50 8Z;
+      M50 6 C50 6, 36 26, 37 37 C37 44, 43 50, 50 50 C57 50, 63 44, 63 37 C64 26, 50 6, 50 6Z;
+      M50 8 C50 8, 38 28, 38 38 C38 45, 43.5 50, 50 50 C56.5 50, 62 45, 62 38 C62 28, 50 8, 50 8Z
+    "/>
+  </path>
+  <!-- Inner flame core -->
+  <path d="M50 22 C50 22, 44 34, 44 39 C44 43, 46.8 46, 50 46 C53.2 46, 56 43, 56 39 C56 34, 50 22, 50 22Z" fill="#fff8dc" opacity="0.75">
+    <animate attributeName="d" dur="2.2s" repeatCount="indefinite" values="
+      M50 22 C50 22, 44 34, 44 39 C44 43, 46.8 46, 50 46 C53.2 46, 56 43, 56 39 C56 34, 50 22, 50 22Z;
+      M50 20 C50 20, 43 33, 43 38 C43 42, 46 46, 50 46 C54 46, 57 42, 57 38 C57 33, 50 20, 50 20Z;
+      M50 22 C50 22, 44 34, 44 39 C44 43, 46.8 46, 50 46 C53.2 46, 56 43, 56 39 C56 34, 50 22, 50 22Z
+    "/>
+  </path>
+  <!-- Diya (oil lamp) bowl -->
+  <path d="M32 54 Q32 50, 50 50 Q68 50, 68 54 L64 62 Q62 66, 50 66 Q38 66, 36 62 Z" fill="url(#pujaDiyaGrad)" stroke="#a07010" stroke-width="0.6"/>
+  <!-- Diya wick holder -->
+  <ellipse cx="50" cy="50" rx="5" ry="2.2" fill="#c9a84c" opacity="0.9"/>
+  <!-- Alpana base pattern — decorative arc motifs -->
+  <g fill="none" stroke="#daa520" stroke-width="0.9" opacity="0.7">
+    <path d="M28 68 Q38 62, 50 66 Q62 62, 72 68"/>
+    <path d="M24 72 Q36 65, 50 70 Q64 65, 76 72"/>
+  </g>
+  <!-- Lotus petals flanking the base -->
+  <g fill="#daa520" opacity="0.45">
+    <path d="M22 74 Q28 66, 34 74 Q28 78, 22 74Z"/>
+    <path d="M66 74 Q72 66, 78 74 Q72 78, 66 74Z"/>
+    <path d="M30 78 Q37 72, 44 78 Q37 82, 30 78Z"/>
+    <path d="M56 78 Q63 72, 70 78 Q63 82, 56 78Z"/>
+  </g>
+  <!-- Small center lotus under diya -->
+  <ellipse cx="50" cy="76" rx="4" ry="2" fill="#daa520" opacity="0.5"/>
+  <!-- Alpana dots -->
+  <g fill="#daa520" opacity="0.55">
+    <circle cx="20" cy="76" r="1.3"/>
+    <circle cx="80" cy="76" r="1.3"/>
+    <circle cx="50" cy="84" r="1.3"/>
+    <circle cx="35" cy="84" r="1"/>
+    <circle cx="65" cy="84" r="1"/>
+  </g>
+</svg>`;
+}
+
+// -------------------------------------------------
 //  Build UI
 // -------------------------------------------------
 function buildUI() {
@@ -929,7 +1006,7 @@ function buildUI() {
   fab.setAttribute('aria-expanded', 'false');
   fab.setAttribute('aria-haspopup', 'dialog');
   fab.setAttribute('title', 'Puja AI');
-  fab.innerHTML = '🪔';
+  fab.innerHTML = getPujaAiBrandSVG();
   root.appendChild(fab);
 
   const panel = document.createElement('div');
@@ -941,7 +1018,7 @@ function buildUI() {
   panel.innerHTML = `
     <div class="puja-ai-header">
       <div class="puja-ai-header-main">
-        <div class="puja-ai-header-icon" aria-hidden="true">🪔</div>
+        <div class="puja-ai-header-icon" aria-hidden="true">${getPujaAiBrandSVG()}</div>
         <div>
           <p class="puja-ai-title">Puja AI</p>
           <p class="puja-ai-subtitle">আপনার পুজো সহায়ক • Your Puja Assistant</p>
