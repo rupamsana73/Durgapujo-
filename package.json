@@ -6,7 +6,7 @@
   "description": "Static Durga Puja pandal-hopping planner with Kolkata Metro and Google Maps links.",
   "scripts": {
     "start": "npx serve .",
-    "test": "node tests/logic.test.mjs"
+    "test": "node tests/logic.test.mjs && node tests/puja-ai.test.mjs && node tests/simulation.test.mjs && node tests/interactions.test.mjs && node tests/browser_chatbot_test.mjs"
   },
   "devDependencies": {
     "puppeteer-core": "^25.12.0"
