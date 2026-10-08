@@ -22,9 +22,10 @@
 
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
-// Default to a confirmed-working free model.
-// Override with OPENROUTER_MODEL env var.
-const DEFAULT_MODEL   = 'qwen/qwen3.8-27b:free';
+// Default to the official OpenRouter free-model router.
+// It dynamically selects an available free model for each request.
+// Override with OPENROUTER_MODEL env var if you want a specific model.
+const DEFAULT_MODEL   = 'openrouter/free';
 
 // Retry config — only applied to HTTP 429 responses.
 const MAX_RETRIES      = 2;          // total extra attempts (primary tried MAX_RETRIES+1 times total)
@@ -91,10 +92,6 @@ async function callOpenRouter(apiKey, model, messages) {
     ],
     max_tokens:  512,
     temperature: 0.7,
-    // Qwen3 and similar reasoning models put output in 'reasoning' by default;
-    // effort:'low' keeps tokens minimal and ensures content lands in
-    // the standard message.content field that we extract below.
-    reasoning: { effort: 'low' },
   };
 
   let orRes;
@@ -115,8 +112,10 @@ async function callOpenRouter(apiKey, model, messages) {
   }
 
   if (!orRes.ok) {
-    // 429 and 5xx are transient; all others are fatal.
-    const fatal = orRes.status !== 429 && orRes.status < 500;
+    // 404 = model not found → allow fallback to a different model.
+    // 429 and 5xx are transient → allow retry/fallback.
+    // All other 4xx (400, 401, 403) are fatal → do NOT retry.
+    const fatal = orRes.status !== 404 && orRes.status !== 429 && orRes.status < 500;
     return { ok: false, status: orRes.status, fatal };
   }
 
@@ -250,15 +249,15 @@ export default async function handler(req, res) {
   console.log(`[puja-ai] calling primary model: ${primaryModel}`);
   let result = await callWithRetry(apiKey, primaryModel, messages, MAX_RETRIES);
 
-  // --- Try fallback model (only on transient failures) ---------------------
+  // --- Try fallback model (on transient OR model-not-found failures) -------
   if (!result.ok && !result.fatal && fallbackModel && fallbackModel !== primaryModel) {
-    console.warn(`[puja-ai] switching to fallback model: ${fallbackModel}`);
+    console.warn(`[puja-ai] primary failed (status ${result.status}), switching to fallback: ${fallbackModel}`);
     result = await callOpenRouter(apiKey, fallbackModel, messages);
     if (!result.ok) {
       console.error(`[puja-ai] fallback model also failed (status ${result.status})`);
     }
   } else if (!result.ok && !result.fatal && !fallbackModel) {
-    console.warn('[puja-ai] no fallback model configured; returning 429 error to client');
+    console.warn('[puja-ai] no fallback model configured; returning error to client');
   }
 
   // --- Handle final failure ------------------------------------------------
